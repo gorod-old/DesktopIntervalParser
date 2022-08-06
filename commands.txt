@@ -1,0 +1,4 @@
+Команда pyinstaller:
+pyinstaller -w -F -i "D:\PycharmProjects\DesctopIntervalParser\icon-Py.ico" "main.py"
+Команда для реформатирования дизайн файла:
+pyuic5 design.ui -o design.py

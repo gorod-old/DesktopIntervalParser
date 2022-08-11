@@ -61,20 +61,23 @@ class SiteParser(QThread):
             self.driver.close()
 
     def _create_driver(self):
-        self.driver = WebDriver(headless=HEADLESS)
-        self.driver.get_page(SITE_URL)
-        for i in range(5):
-            els = self.driver.get_elements((By.CSS_SELECTOR, '#main > div.container.fill-height.ma-0.pa-0 > '
-                                                             'div.v-image.v-responsive.theme--light > '
-                                                             'div.v-responsive__content > div > div > div:nth-child('
-                                                             '1)'))
-            if not els or len(els) == 0:
-                sleep(uniform(1, 5))
-                self.driver.close()
-                self.driver = WebDriver(headless=HEADLESS)
-                self.driver.get_page(SITE_URL)
-            else:
-                break
+        try:
+            self.driver = WebDriver(headless=HEADLESS)
+            self.driver.get_page(SITE_URL)
+            for i in range(5):
+                els = self.driver.get_elements((By.CSS_SELECTOR, '#main > div.container.fill-height.ma-0.pa-0 > '
+                                                                 'div.v-image.v-responsive.theme--light > '
+                                                                 'div.v-responsive__content > div > div > div:nth-child('
+                                                                 '1)'))
+                if not els or len(els) == 0:
+                    sleep(uniform(1, 5))
+                    self.driver.close()
+                    self.driver = WebDriver(headless=HEADLESS)
+                    self.driver.get_page(SITE_URL)
+                else:
+                    break
+        except Exception as e:
+            err_log(SITE_NAME + '_create_driver', str(e))
 
     def run(self):
         self.info_msg(f'start parser: {self.name}')
@@ -84,7 +87,10 @@ class SiteParser(QThread):
             gspread_update(data_, HEADER, SPREADSHEET_ID, SHEET_ID)  # gspread update_sheet_data()
         self.app.parser_result(self.name, len(data), time() - self.time)
         self.app.next_parser(self.name)
-        self.driver.close()
+        try:
+            self.driver.close()
+        except Exception as e:
+            err_log(SITE_NAME + '[SiteParser] run', str(e))
         self.quit()
 
 
@@ -120,14 +126,14 @@ def pars_data(parser):
                 text = driver.get_element((By.CSS_SELECTOR, '#flat > div.container.pa-5 > h1')).text
                 flat = text.split(' ')[0].strip()
             except Exception as e:
-                err_log('get_flat_info [квартира]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [квартира]', str(e))
             try:
                 area = driver.get_element((By.CSS_SELECTOR, '#flat > div.container.pa-5 > div.row.pt-5.justify-center '
                                                             '> div.col-md-4.col > '
                                                             'div.v-list.v-sheet.theme--light.v-list--dense > '
                                                             'div:nth-child(2) > div:nth-child(2) > span')).text.strip()
             except Exception as e:
-                err_log('get_flat_info [площадь]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [площадь]', str(e))
             try:
                 price = driver.get_element((By.CSS_SELECTOR, '#flat > div.container.pa-5 > '
                                                              'div.row.pt-5.justify-center > div.col-md-4.col > '
@@ -135,7 +141,7 @@ def pars_data(parser):
                                                              'div:nth-child(3) > '
                                                              'div.v-list-item__content.font-weight-bold')).text.strip()
             except Exception as e:
-                err_log('get_flat_info [цена]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [цена]', str(e))
             row.extend([flat, area, price])
             parser.add_row_info(row, floor, flat)
             driver.driver.back()

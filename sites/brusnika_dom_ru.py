@@ -61,17 +61,20 @@ class SiteParser(QThread):
             self.driver.close()
 
     def _create_driver(self):
-        self.driver = WebDriver(headless=HEADLESS)
-        self.driver.get_page(SITE_URL)
-        for i in range(5):
-            els = self.driver.get_elements((By.CSS_SELECTOR, '#wpt_table > tbody > tr'))
-            if not els or len(els) == 0:
-                sleep(uniform(1, 5))
-                self.driver.close()
-                self.driver = WebDriver(headless=HEADLESS)
-                self.driver.get_page(SITE_URL)
-            else:
-                break
+        try:
+            self.driver = WebDriver(headless=HEADLESS)
+            self.driver.get_page(SITE_URL)
+            for i in range(5):
+                els = self.driver.get_elements((By.CSS_SELECTOR, '#wpt_table > tbody > tr'))
+                if not els or len(els) == 0:
+                    sleep(uniform(1, 5))
+                    self.driver.close()
+                    self.driver = WebDriver(headless=HEADLESS)
+                    self.driver.get_page(SITE_URL)
+                else:
+                    break
+        except Exception as e:
+            err_log(SITE_NAME + '_create_driver', str(e))
 
     def run(self):
         self.info_msg(f'start parser: {self.name}')
@@ -81,7 +84,10 @@ class SiteParser(QThread):
             gspread_update(data_, HEADER, SPREADSHEET_ID, SHEET_ID)  # gspread update_sheet_data()
         self.app.parser_result(self.name, len(data), time() - self.time)
         self.app.next_parser(self.name)
-        self.driver.close()
+        try:
+            self.driver.close()
+        except Exception as e:
+            err_log(SITE_NAME + '[SiteParser] run', str(e))
         self.quit()
 
 
@@ -119,34 +125,34 @@ def pars_data(parser):
             flat_ = el_.split('\n')[0]
             house_ = el_.split('\n')[1]
         except Exception as e:
-            print_exception_msg(str(e))
+            err_log(SITE_NAME + ' pars_data[квартира, дом]', str(e))
         # цена
         try:
             price_ = el.find_element(By.CSS_SELECTOR, 'td:nth-child(4) div').text
         except Exception as e:
-            print_exception_msg(str(e))
+            err_log(SITE_NAME + ' pars_data[цена]', str(e))
         # этаж
         try:
             floor_ = el.find_element(By.CSS_SELECTOR, 'td:nth-child(6) div div:nth-child(5)').text\
                 .replace('Этаж', 'Этаж ')
         except Exception as e:
-            print_exception_msg(str(e))
+            err_log(SITE_NAME + ' pars_data[этаж]', str(e))
         # подъезд
         try:
             entrance_ = (int(flat_.split(' ')[1]) - 1) // 12 + 1
         except Exception as e:
-            print_exception_msg(str(e))
+            err_log(SITE_NAME + ' pars_data[подъезд]', str(e))
         # плошадь
         try:
             area_ = el.find_element(By.CSS_SELECTOR, 'td:nth-child(6) div div:nth-child(1)').text\
                 .replace('Жилая площадь', '')
         except Exception as e:
-            print_exception_msg(str(e))
+            err_log(SITE_NAME + ' pars_data[жилая площадь]', str(e))
         # статус
         try:
             status_ = el.find_element(By.CSS_SELECTOR, 'td:nth-child(3) div p').text
         except Exception as e:
-            print_exception_msg(str(e))
+            err_log(SITE_NAME + ' pars_data[статус]', str(e))
         row = [flat_, price_, floor_, entrance_, area_, status_, house_]
         parser.add_row_info(row)
     return data

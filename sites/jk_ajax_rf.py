@@ -5,7 +5,7 @@ from PyQt5.QtCore import QThread
 from colorama import Fore, Style
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from MessagePack.message import err_log
+from MessagePack.message import err_log, print_exception_msg
 from WebDriverPack import WebDriver
 from WebDriverPack.webDriver import try_func, timer_func
 from g_gspread import update_sheet_data as gspread_update
@@ -60,27 +60,36 @@ class SiteParser(QThread):
             self.driver.close()
 
     def _create_driver(self):
-        self.driver = WebDriver(headless=HEADLESS)
-        self.driver.get_page(SITE_URL)
-        for i in range(5):
-            els = self.driver.get_elements((By.CSS_SELECTOR, '#window path'))
-            if not els or len(els) == 0:
-                sleep(uniform(1, 5))
-                self.driver.close()
-                self.driver = WebDriver(headless=HEADLESS)
-                self.driver.get_page(SITE_URL)
-            else:
-                break
+        try:
+            self.driver = WebDriver(headless=HEADLESS)
+            self.driver.get_page(SITE_URL)
+            for i in range(5):
+                els = self.driver.get_elements((By.CSS_SELECTOR, '#window path'))
+                if not els or len(els) == 0:
+                    sleep(uniform(1, 5))
+                    self.driver.close()
+                    self.driver = WebDriver(headless=HEADLESS)
+                    self.driver.get_page(SITE_URL)
+                else:
+                    break
+        except Exception as e:
+            err_log(SITE_NAME + '_create_driver', str(e))
 
     def run(self):
         self.info_msg(f'start parser: {self.name}')
         self._create_driver()
         data_ = pars_data(self)
-        if data_ and len(data_) > 0:
-            gspread_update(data_, HEADER, SPREADSHEET_ID, SHEET_ID)  # gspread update_sheet_data()
+        try:
+            if data_ and len(data_) > 0:
+                gspread_update(data_, HEADER, SPREADSHEET_ID, SHEET_ID)  # gspread update_sheet_data()
+        except Exception as e:
+            print_exception_msg(str(e))
         self.app.parser_result(self.name, len(data), time() - self.time)
         self.app.next_parser(self.name)
-        self.driver.close()
+        try:
+            self.driver.close()
+        except Exception as e:
+            err_log(SITE_NAME + '[SiteParser] run', str(e))
         self.quit()
 
 
@@ -175,33 +184,33 @@ def get_flat_info(driver, floor, app, parser):
                 house_ = txt.split('Квартира ')[0].split('Дом ')[1].strip()
                 flat_ = txt.split('Квартира ')[1].split(' ')[0].strip()
             except Exception as e:
-                err_log('get_flat_info [дом]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [дом]', str(e))
             # Этаж
             try:
                 txt = soup.select(
                     'body > div.apartment-info-box > div.apartment-details > p > em:nth-child(2)')[0].getText()
                 floor_ = txt.split('Этаж ')[1].strip()
             except Exception as e:
-                err_log('get_flat_info [этаж]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [этаж]', str(e))
             # Площыдь
             try:
                 area_ = soup.select('body > div.apartment-info-box > div.apartment-details > p > strong')[0] \
                     .getText().strip()
             except Exception as e:
-                err_log('get_flat_info [площадь]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [площадь]', str(e))
             # Статус
             try:
                 status_ = soup.select(
                     'body > div.apartment-info-box > div.apartment-details > div.status_kom > div')[0] \
                     .getText(strip=True)
             except Exception as e:
-                err_log('get_flat_info [статус]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [статус]', str(e))
             # Цена
             try:
                 price_ = soup.select('body > div.apartment-info-box > div.apartment-details > div.pr > span')[0] \
                     .getText(strip=True)
             except Exception as e:
-                err_log('get_flat_info [цена]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [цена]', str(e))
             row = [house_, floor_, flat_, area_, status_, price_]
         if (len(row) == 0 or '' in row) and repeat < 3:
             repeat += 1

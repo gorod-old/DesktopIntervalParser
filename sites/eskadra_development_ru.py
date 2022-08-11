@@ -60,17 +60,20 @@ class SiteParser(QThread):
             self.driver.close()
 
     def _create_driver(self):
-        self.driver = WebDriver(headless=HEADLESS)
-        self.driver.get_page(SITE_URL)
-        for i in range(5):
-            els = self.driver.get_elements((By.CSS_SELECTOR, '#flats_cont > div.flats.cleaner > div.item > a'))
-            if not els or len(els) == 0:
-                sleep(uniform(1, 5))
-                self.driver.close()
-                self.driver = WebDriver(headless=HEADLESS)
-                self.driver.get_page(SITE_URL)
-            else:
-                break
+        try:
+            self.driver = WebDriver(headless=HEADLESS)
+            self.driver.get_page(SITE_URL)
+            for i in range(5):
+                els = self.driver.get_elements((By.CSS_SELECTOR, '#flats_cont > div.flats.cleaner > div.item > a'))
+                if not els or len(els) == 0:
+                    sleep(uniform(1, 5))
+                    self.driver.close()
+                    self.driver = WebDriver(headless=HEADLESS)
+                    self.driver.get_page(SITE_URL)
+                else:
+                    break
+        except Exception as e:
+            err_log(SITE_NAME + '_create_driver', str(e))
 
     def run(self):
         self.info_msg(f'start parser: {self.name}')
@@ -80,7 +83,10 @@ class SiteParser(QThread):
             gspread_update(data_, HEADER, SPREADSHEET_ID, SHEET_ID)  # gspread update_sheet_data()
         self.app.parser_result(self.name, len(data), time() - self.time)
         self.app.next_parser(self.name)
-        self.driver.close()
+        try:
+            self.driver.close()
+        except Exception as e:
+            err_log(SITE_NAME + '[SiteParser] run', str(e))
         self.quit()
 
 
@@ -111,7 +117,7 @@ def pars_data(parser):
                 floor = text.split('Этаж:')[1].split('Цена:')[0].strip()
                 price = text.split('Цена:')[1].strip()
             except Exception as e:
-                err_log('pars_data [Объект, площадь, этаж, цена]', str(e))
+                err_log(SITE_NAME + ' pars_data [Объект, площадь, этаж, цена]', str(e))
             try:
                 status = el.find_element(By.CSS_SELECTOR, 'div.booked')
                 if status:

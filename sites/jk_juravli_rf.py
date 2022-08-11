@@ -59,17 +59,20 @@ class SiteParser(QThread):
             self.driver.close()
 
     def _create_driver(self):
-        self.driver = WebDriver(headless=HEADLESS)
-        self.driver.get_page(SITE_URL)
-        for i in range(5):
-            els = self.driver.get_elements((By.CSS_SELECTOR, '#page > div.main_house.d-mobile-none > svg > g'))
-            if not els or len(els) == 0:
-                sleep(uniform(1, 5))
-                self.driver.close()
-                self.driver = WebDriver(headless=HEADLESS)
-                self.driver.get_page(SITE_URL)
-            else:
-                break
+        try:
+            self.driver = WebDriver(headless=HEADLESS)
+            self.driver.get_page(SITE_URL)
+            for i in range(5):
+                els = self.driver.get_elements((By.CSS_SELECTOR, '#page > div.main_house.d-mobile-none > svg > g'))
+                if not els or len(els) == 0:
+                    sleep(uniform(1, 5))
+                    self.driver.close()
+                    self.driver = WebDriver(headless=HEADLESS)
+                    self.driver.get_page(SITE_URL)
+                else:
+                    break
+        except Exception as e:
+            err_log(SITE_NAME + '_create_driver', str(e))
 
     def run(self):
         self.info_msg(f'start parser: {self.name}')
@@ -79,7 +82,10 @@ class SiteParser(QThread):
             gspread_update(data_, HEADER, SPREADSHEET_ID, SHEET_ID)  # gspread update_sheet_data()
         self.app.parser_result(self.name, len(data), time() - self.time)
         self.app.next_parser(self.name)
-        self.driver.close()
+        try:
+            self.driver.close()
+        except Exception as e:
+            err_log(SITE_NAME + '[SiteParser] run', str(e))
         self.quit()
 
 
@@ -122,7 +128,7 @@ def pars_data(parser):
                 s = text.split('секция')[1].split('—')[0].strip()
                 f = text.split('этаж')[1].strip()
             except Exception as e:
-                err_log('pars_data [Дом + секция + этаж]', str(e))
+                err_log(SITE_NAME + ' pars_data [Дом + секция + этаж]', str(e))
             els_f = driver.get_elements((By.CSS_SELECTOR,
                                          '#page > div.section_floor > div.section > div.rooms > div > svg > path'))
             for el in els_f:
@@ -134,7 +140,7 @@ def pars_data(parser):
                         (By.CSS_SELECTOR, '#page > div.section_floor > div.info > div.price > span'))\
                         .text.strip()
                 except Exception as e:
-                    err_log('pars_data [Квартира]', str(e))
+                    err_log(SITE_NAME + ' pars_data [Цена]', str(e))
                 if '- руб.' not in price:
                     flat = ''
                     try:
@@ -142,14 +148,14 @@ def pars_data(parser):
                             (By.CSS_SELECTOR, '#page > div.section_floor > div.info > div.room > span'))\
                             .text.strip()
                     except Exception as e:
-                        err_log('pars_data [Квартира]', str(e))
+                        err_log(SITE_NAME + ' pars_data [Квартира]', str(e))
                     square = ''
                     try:
                         square = driver.get_element(
                             (By.CSS_SELECTOR, '#page > div.section_floor > div.info > div.area > span'))\
                             .text.strip()
                     except Exception as e:
-                        err_log('pars_data [Квартира]', str(e))
+                        err_log(SITE_NAME + ' pars_data [Площадь]', str(e))
                     row.extend([flat, square, price])
                     data.append(row)
                     parser.info_msg(row)

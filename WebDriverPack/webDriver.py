@@ -49,8 +49,7 @@ def try_func(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            pass
-            # print_exception_msg(msg=str(e))
+            print_exception_msg(msg=str(e))
     return wrapper
 
 
@@ -406,7 +405,8 @@ class WebDriver(Parser):
                                                            submit_check_element=submit_check_element)
                 return not captcha or solved
             except Exception as e:
-                self.print_msg(location='WebDriver get_page', msg=f'{str(e)}', stream=self.stream)
+                print_exception_msg(str(e))
+                # self.print_msg(location='WebDriver get_page', msg=f'{str(e)}', stream=self.stream)
                 self._reset_driver()
         return False
 

@@ -60,21 +60,24 @@ class SiteParser(QThread):
             self.driver.close()
 
     def _create_driver(self):
-        self.driver = WebDriver(headless=HEADLESS)
-        self.driver.get_page(SITE_URL,
-                             element=(By.CSS_SELECTOR, '#reservation-complex__svg > svg'),
-                             el_max_wait_time=20)
-        for i in range(5):
-            els = self.driver.get_elements((By.CSS_SELECTOR, '#reservation-complex__svg > svg'))
-            if not els or len(els) == 0:
-                sleep(uniform(1, 5))
-                self.driver.close()
-                self.driver = WebDriver(headless=HEADLESS)
-                self.driver.get_page(SITE_URL,
-                                     element=(By.CSS_SELECTOR, '#reservation-complex__svg > svg'),
-                                     el_max_wait_time=20)
-            else:
-                break
+        try:
+            self.driver = WebDriver(headless=HEADLESS)
+            self.driver.get_page(SITE_URL,
+                                 element=(By.CSS_SELECTOR, '#reservation-complex__svg > svg'),
+                                 el_max_wait_time=20)
+            for i in range(5):
+                els = self.driver.get_elements((By.CSS_SELECTOR, '#reservation-complex__svg > svg'))
+                if not els or len(els) == 0:
+                    sleep(uniform(1, 5))
+                    self.driver.close()
+                    self.driver = WebDriver(headless=HEADLESS)
+                    self.driver.get_page(SITE_URL,
+                                         element=(By.CSS_SELECTOR, '#reservation-complex__svg > svg'),
+                                         el_max_wait_time=20)
+                else:
+                    break
+        except Exception as e:
+            err_log(SITE_NAME + '_create_driver', str(e))
 
     def run(self):
         self.info_msg(f'start parser: {self.name}')
@@ -84,7 +87,10 @@ class SiteParser(QThread):
             gspread_update(data_, HEADER, SPREADSHEET_ID, SHEET_ID)  # gspread update_sheet_data()
         self.app.parser_result(self.name, len(data), time() - self.time)
         self.app.next_parser(self.name)
-        self.driver.close()
+        try:
+            self.driver.close()
+        except Exception as e:
+            err_log(SITE_NAME + '[SiteParser] run', str(e))
         self.quit()
 
 
@@ -224,7 +230,7 @@ def pars_data(parser):
                      '#reservation-flat > h2')).text
                 flat_ = txt.split('Квартира №')[1].strip()
             except Exception as e:
-                err_log('get_flat_info [квартира]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [квартира]', str(e))
             # Тип Квартиры
             try:
                 txt = driver.get_element(
@@ -232,7 +238,7 @@ def pars_data(parser):
                      '#reservation-flat > div > div.reservation-flat__info > ul:nth-child(4) > li:nth-child(2)')).text
                 type_ = txt.split('Тип квартиры:')[1].strip()
             except Exception as e:
-                err_log('get_flat_info [тип квартиры]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [тип квартиры]', str(e))
             # Площадь
             try:
                 txt = driver.get_element(
@@ -240,7 +246,7 @@ def pars_data(parser):
                      '#reservation-flat > div > div.reservation-flat__info > ul:nth-child(4) > li:nth-child(3)')).text
                 area_ = txt.split('Площадь квартиры: ')[1].strip()
             except Exception as e:
-                err_log('get_flat_info [площадь]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [площадь]', str(e))
             # Статус
             try:
                 status_ = driver.get_element(
@@ -248,7 +254,7 @@ def pars_data(parser):
                      '#reservation-flat > div > div.reservation-flat__info > ul:nth-child(4) >'
                      ' li:nth-child(1) > span')).text.strip()
             except Exception as e:
-                err_log('get_flat_info [статус]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [статус]', str(e))
             # Цена
             price_ = '- ₽'
             try:

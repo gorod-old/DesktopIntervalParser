@@ -61,17 +61,20 @@ class SiteParser(QThread):
             self.driver.close()
 
     def _create_driver(self):
-        self.driver = WebDriver(headless=HEADLESS)
-        self.driver.get_page(SITE_URL)
-        for i in range(5):
-            els = self.driver.get_elements((By.CSS_SELECTOR, '#scroller > svg > path'))
-            if not els or len(els) == 0:
-                sleep(uniform(1, 5))
-                self.driver.close()
-                self.driver = WebDriver(headless=HEADLESS)
-                self.driver.get_page(SITE_URL)
-            else:
-                break
+        try:
+            self.driver = WebDriver(headless=HEADLESS)
+            self.driver.get_page(SITE_URL)
+            for i in range(5):
+                els = self.driver.get_elements((By.CSS_SELECTOR, '#scroller > svg > path'))
+                if not els or len(els) == 0:
+                    sleep(uniform(1, 5))
+                    self.driver.close()
+                    self.driver = WebDriver(headless=HEADLESS)
+                    self.driver.get_page(SITE_URL)
+                else:
+                    break
+        except Exception as e:
+            err_log(SITE_NAME + '_create_driver', str(e))
 
     def run(self):
         self.info_msg(f'start parser: {self.name}')
@@ -81,7 +84,10 @@ class SiteParser(QThread):
             gspread_update(data_, HEADER, SPREADSHEET_ID, SHEET_ID)  # gspread update_sheet_data()
         self.app.parser_result(self.name, len(data), time() - self.time)
         self.app.next_parser(self.name)
-        self.driver.close()
+        try:
+            self.driver.close()
+        except Exception as e:
+            err_log(SITE_NAME + '[SiteParser] run', str(e))
         self.quit()
 
 
@@ -173,19 +179,19 @@ def get_flat_info(driver, f, d, floor, app, parser):
                 txt = soup.select('body > div.apartment-info-box > h1')[0].getText()
                 flat_ = int(txt.split('Квартира №')[1].split(' ')[0].strip())
             except Exception as e:
-                err_log('get_flat_info [квартира]', str(e))
-            # Площыдь
+                err_log(SITE_NAME + ' get_flat_info [квартира]', str(e))
+            # Площадь
             try:
                 area_ = soup.select('body > div.apartment-info-box > div.apartment-details > p > strong')[0] \
                     .getText().strip()
             except Exception as e:
-                err_log('get_flat_info [площадь]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [площадь]', str(e))
             # Цена
             try:
                 price_ = soup.select('body > div.apartment-info-box > div.apartment-details > span')[0] \
                     .getText(strip=True)
             except Exception as e:
-                err_log('get_flat_info [цена]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [цена]', str(e))
             row.extend([flat_, area_, price_])
             parser.add_row_info(row, floor, flat_)
 

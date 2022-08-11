@@ -60,17 +60,20 @@ class SiteParser(QThread):
             self.driver.close()
 
     def _create_driver(self):
-        self.driver = WebDriver(headless=HEADLESS)
-        self.driver.get_page(SITE_URL)
-        for i in range(5):
-            els = self.driver.get_elements((By.CSS_SELECTOR, '#window path'))
-            if not els or len(els) == 0:
-                sleep(uniform(1, 5))
-                self.driver.close()
-                self.driver = WebDriver(headless=HEADLESS)
-                self.driver.get_page(SITE_URL)
-            else:
-                break
+        try:
+            self.driver = WebDriver(headless=HEADLESS)
+            self.driver.get_page(SITE_URL)
+            for i in range(5):
+                els = self.driver.get_elements((By.CSS_SELECTOR, '#window path'))
+                if not els or len(els) == 0:
+                    sleep(uniform(1, 5))
+                    self.driver.close()
+                    self.driver = WebDriver(headless=HEADLESS)
+                    self.driver.get_page(SITE_URL)
+                else:
+                    break
+        except Exception as e:
+            err_log(SITE_NAME + '_create_driver', str(e))
 
     def run(self):
         self.info_msg(f'start parser: {self.name}')
@@ -80,7 +83,10 @@ class SiteParser(QThread):
             gspread_update(data_, HEADER, SPREADSHEET_ID, SHEET_ID)  # gspread update_sheet_data()
         self.app.parser_result(self.name, len(data), time() - self.time)
         self.app.next_parser(self.name)
-        self.driver.close()
+        try:
+            self.driver.close()
+        except Exception as e:
+            err_log(SITE_NAME + '[SiteParser] run', str(e))
         self.quit()
 
 
@@ -197,7 +203,7 @@ def get_flat_info(driver, url, floor, house, app, parser):
                 house_ = txt.split(',')[-1].split('дом')[0].strip() if house == 1 else \
                     txt.split(',')[1].split('Этаж')[0].split('Дом')[1].strip()
             except Exception as e:
-                err_log('get_flat_info [дом]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [дом]', str(e))
             # Этаж
             try:
                 txt = driver.get_elements(
@@ -206,34 +212,34 @@ def get_flat_info(driver, url, floor, house, app, parser):
                 floor_ = txt.split(',')[-1].split('дом')[1].split('этаж')[0].strip() if house == 1 else \
                     txt.split(',')[1].split('Этаж')[1].split('Комнат')[0].strip()
             except Exception as e:
-                err_log('get_flat_info [дом]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [этаж]', str(e))
             # Квартира
             try:
                 flat_ = driver.get_elements(
                     (By.CSS_SELECTOR, 'body > div > h1'))[0].text.split(' ')[1].split('\n')[0].strip()
             except Exception as e:
-                err_log('get_flat_info [дом]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [квартира]', str(e))
             # Площадь
             try:
                 area_ = driver.get_elements(
                     (By.CSS_SELECTOR,
                      'body > div > div.apartment-details > p > strong'))[0].text.strip()
             except Exception as e:
-                err_log('get_flat_info [дом]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [площадь]', str(e))
             # Статус
             try:
                 status_ = driver.get_elements(
                     (By.CSS_SELECTOR,
                      'body > div > div.apartment-details > div > div'))[0].text.strip()
             except Exception as e:
-                err_log('get_flat_info [дом]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [статус]', str(e))
             # Цена
             try:
                 price_ = driver.get_elements(
                     (By.CSS_SELECTOR,
                      'body > div > div.apartment-details > span'))[0].text.strip()
             except Exception as e:
-                err_log('get_flat_info [дом]', str(e))
+                err_log(SITE_NAME + ' get_flat_info [цена]', str(e))
             row = [house_, floor_, flat_, area_, status_, price_]
             parser.add_row_info(row, floor + 1, flat + 1)
 

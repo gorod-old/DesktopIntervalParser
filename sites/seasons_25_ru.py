@@ -5,6 +5,8 @@ from PyQt5.QtCore import QThread
 from colorama import Fore, Style
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+
+from MessagePack.message import err_log
 from WebDriverPack import WebDriver
 from WebDriverPack.webDriver import try_func, timer_func
 from g_gspread import update_sheet_data as gspread_update
@@ -58,17 +60,20 @@ class SiteParser(QThread):
             self.driver.close()
 
     def _create_driver(self):
-        self.driver = WebDriver(headless=HEADLESS)
-        self.driver.get_page(SITE_URL)
-        for i in range(5):
-            els = self.driver.get_elements((By.CSS_SELECTOR, '#scroller > svg > rect'))
-            if not els or len(els) == 0:
-                sleep(uniform(1, 5))
-                self.driver.close()
-                self.driver = WebDriver(headless=HEADLESS)
-                self.driver.get_page(SITE_URL)
-            else:
-                break
+        try:
+            self.driver = WebDriver(headless=HEADLESS)
+            self.driver.get_page(SITE_URL)
+            for i in range(5):
+                els = self.driver.get_elements((By.CSS_SELECTOR, '#scroller > svg > rect'))
+                if not els or len(els) == 0:
+                    sleep(uniform(1, 5))
+                    self.driver.close()
+                    self.driver = WebDriver(headless=HEADLESS)
+                    self.driver.get_page(SITE_URL)
+                else:
+                    break
+        except Exception as e:
+            err_log(SITE_NAME + '_create_driver', str(e))
 
     def run(self):
         self.info_msg(f'start parser: {self.name}')
@@ -78,7 +83,10 @@ class SiteParser(QThread):
             gspread_update(data_, HEADER, SPREADSHEET_ID, SHEET_ID)  # gspread update_sheet_data()
         self.app.parser_result(self.name, len(data), time() - self.time)
         self.app.next_parser(self.name)
-        self.driver.close()
+        try:
+            self.driver.close()
+        except Exception as e:
+            err_log(SITE_NAME + '[SiteParser] run', str(e))
         self.quit()
 
 
@@ -139,5 +147,5 @@ def get_flat_info(driver, floor, section, app, parser):
                 data.append(row)
                 parser.info_msg(row)
             except Exception as e:
-                pass
+                err_log(SITE_NAME + ' get_flat_info [квартира, площадь, цена]', str(e))
 

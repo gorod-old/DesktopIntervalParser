@@ -61,21 +61,24 @@ class SiteParser(QThread):
             self.driver.close()
 
     def _create_driver(self):
-        self.driver = WebDriver(headless=HEADLESS)
-        self.driver.get_page(SITE_URL)
-        for i in range(5):
-            els = self.driver.get_elements((By.CSS_SELECTOR, '#AppWrapper > div > div > div > '
-                                                             'div.styles__Wrapper-sc-n9odu4-1.bnsRkD > '
-                                                             'div.styles__Results-sc-n9odu4-4.tpPsg > div > '
-                                                             'div.styles__Container-sc-1m93mro-1.jPNZOV > div > div > '
-                                                             'div > a'))
-            if not els or len(els) == 0:
-                sleep(uniform(1, 5))
-                self.driver.close()
-                self.driver = WebDriver(headless=HEADLESS)
-                self.driver.get_page(SITE_URL)
-            else:
-                break
+        try:
+            self.driver = WebDriver(headless=HEADLESS)
+            self.driver.get_page(SITE_URL)
+            for i in range(5):
+                els = self.driver.get_elements((By.CSS_SELECTOR, '#AppWrapper > div > div > div > '
+                                                                 'div.styles__Wrapper-sc-n9odu4-1.bnsRkD > '
+                                                                 'div.styles__Results-sc-n9odu4-4.tpPsg > div > '
+                                                                 'div.styles__Container-sc-1m93mro-1.jPNZOV > div > div > '
+                                                                 'div > a'))
+                if not els or len(els) == 0:
+                    sleep(uniform(1, 5))
+                    self.driver.close()
+                    self.driver = WebDriver(headless=HEADLESS)
+                    self.driver.get_page(SITE_URL)
+                else:
+                    break
+        except Exception as e:
+            err_log(SITE_NAME + '_create_driver', str(e))
 
     def run(self):
         self.info_msg(f'start parser: {self.name}')
@@ -85,7 +88,10 @@ class SiteParser(QThread):
             gspread_update(data_, HEADER, SPREADSHEET_ID, SHEET_ID)  # gspread update_sheet_data()
         self.app.parser_result(self.name, len(data), time() - self.time)
         self.app.next_parser(self.name)
-        self.driver.close()
+        try:
+            self.driver.close()
+        except Exception as e:
+            err_log(SITE_NAME + '[SiteParser] run', str(e))
         self.quit()
 
 
@@ -112,7 +118,7 @@ def pars_data(parser):
             type_ = text.split(' ')[0].strip()
             area_ = text.split(' ')[1].strip() + 'м²'
         except Exception as e:
-            err_log('get_flat_info [тип, площадь]', str(e))
+            err_log(SHEET_NAME + ' get_flat_info [тип, площадь]', str(e))
         # Корпус + секция + этаж
         try:
             text = el.find_element(By.XPATH, './div[2]/div[1]/span').text
@@ -120,13 +126,13 @@ def pars_data(parser):
             section_ = text.split('секция')[1].split('·')[0].strip()
             floor_ = text.split('этаж')[1].strip()
         except Exception as e:
-            err_log('get_flat_info [Корпус, секция, этаж]', str(e))
+            err_log(SHEET_NAME + ' get_flat_info [Корпус, секция, этаж]', str(e))
         # Цена
         try:
             text = el.find_element(By.XPATH, './div[3]/div/div[1]/div/div[1]/span').text
             price_ = text.strip()
         except Exception as e:
-            err_log('get_flat_info [Цена]', str(e))
+            err_log(SHEET_NAME + ' get_flat_info [Цена]', str(e))
         # № квартиры на этаже
         try:
             url = el.get_attribute('href')
@@ -139,7 +145,7 @@ def pars_data(parser):
                             '6]/div[2]')
             flat_ = driver_1.get_element(el).text.strip()
         except Exception as e:
-            err_log('get_flat_info [№ на этаже]', str(e))
+            err_log(SHEET_NAME + ' get_flat_info [№ на этаже]', str(e))
         row = [block_, section_, floor_, flat_, type_, area_, price_]
         parser.add_row_info(row)
     driver_1.close()

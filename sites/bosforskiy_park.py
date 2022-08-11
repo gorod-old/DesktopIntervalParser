@@ -118,7 +118,7 @@ def pars_data(parser):
             type_ = text.split(' ')[0].strip()
             area_ = text.split(' ')[1].strip() + 'м²'
         except Exception as e:
-            err_log(SHEET_NAME + ' get_flat_info [тип, площадь]', str(e))
+            err_log(SITE_NAME + ' get_flat_info [тип, площадь]', str(e))
         # Корпус + секция + этаж
         try:
             text = el.find_element(By.XPATH, './div[2]/div[1]/span').text
@@ -126,13 +126,13 @@ def pars_data(parser):
             section_ = text.split('секция')[1].split('·')[0].strip()
             floor_ = text.split('этаж')[1].strip()
         except Exception as e:
-            err_log(SHEET_NAME + ' get_flat_info [Корпус, секция, этаж]', str(e))
+            err_log(SITE_NAME + ' get_flat_info [Корпус, секция, этаж]', str(e))
         # Цена
         try:
             text = el.find_element(By.XPATH, './div[3]/div/div[1]/div/div[1]/span').text
             price_ = text.strip()
         except Exception as e:
-            err_log(SHEET_NAME + ' get_flat_info [Цена]', str(e))
+            err_log(SITE_NAME + ' get_flat_info [Цена]', str(e))
         # № квартиры на этаже
         try:
             url = el.get_attribute('href')
@@ -145,7 +145,7 @@ def pars_data(parser):
                             '6]/div[2]')
             flat_ = driver_1.get_element(el).text.strip()
         except Exception as e:
-            err_log(SHEET_NAME + ' get_flat_info [№ на этаже]', str(e))
+            err_log(SITE_NAME + ' get_flat_info [№ на этаже]', str(e))
         row = [block_, section_, floor_, flat_, type_, area_, price_]
         parser.add_row_info(row)
     driver_1.close()

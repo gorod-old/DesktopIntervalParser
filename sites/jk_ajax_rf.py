@@ -79,13 +79,11 @@ class SiteParser(QThread):
         self.info_msg(f'start parser: {self.name}')
         self._create_driver()
         data_ = pars_data(self)
-        try:
-            if data_ and len(data_) > 0:
-                gspread_update(data_, HEADER, SPREADSHEET_ID, SHEET_ID)  # gspread update_sheet_data()
-        except Exception as e:
-            print_exception_msg(str(e))
-        self.app.parser_result(self.name, len(data), time() - self.time)
-        self.app.next_parser(self.name)
+        count = 0 if data_ is None else len(data_)
+        if data_ and len(data_) > 0:
+            gspread_update(data_, HEADER, SPREADSHEET_ID, SHEET_ID)  # gspread update_sheet_data()
+        self.app.parser_result(self.name, count, time() - self.time)
+        self.app.next_parser(self.name, self.stream)
         try:
             self.driver.close()
         except Exception as e:

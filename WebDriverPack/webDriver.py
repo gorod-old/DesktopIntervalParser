@@ -11,6 +11,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.remote.webelement import WebElement
 
 from MessagePack import print_exception_msg, print_info_msg
+from MessagePack.message import err_log
 from ServiceApiPack import solve_recaptcha_guru, solve_img_captcha_guru
 
 import pydub
@@ -49,7 +50,8 @@ def try_func(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            print_exception_msg(msg=str(e))
+            # print_exception_msg(msg=str(e))
+            pass
     return wrapper
 
 
@@ -117,7 +119,8 @@ class WebDriver(Parser):
 
     def __init__(self, marker: str = None, user_agent: bool = True, proxy=False, proxy_api: list = None,
                  proxy_auth: bool = False, except_print: bool = False, delay_time: float = 3,
-                 headless: bool = False, max_retry: int = 5, stream: int = None):
+                 headless: bool = False, max_retry: int = 5, stream: int = None,
+                 window_width: int = 1920, window_height: int = 1080, rem_warning=False, full_screen=False):
         super(WebDriver, self).__init__()
         print(Fore.YELLOW + '[INFO]  marker:', Fore.MAGENTA + f'{marker}')
         self._proxy = proxy
@@ -129,7 +132,7 @@ class WebDriver(Parser):
         self._headless = headless
         self._max_retry = max_retry
         self._stream = stream
-        self._driver = self._get_driver()
+        self._driver = self._get_driver(window_width, window_height, rem_warning, full_screen)
 
     def __del__(self):
         try:
@@ -174,7 +177,7 @@ class WebDriver(Parser):
                 self._get_proxies()
         return proxy
 
-    def _get_driver(self):
+    def _get_driver(self, width, height, rem_warning, full_screen):
         if not os.path.exists('C:/Program Files/Google/Chrome/Application/chrome.exe'):
             sys.exit(
                 "[ERR] Please make sure Chrome browser is installed "
@@ -193,7 +196,11 @@ class WebDriver(Parser):
                 service.creationflags = CREATE_NO_WINDOW
                 options = webdriver.ChromeOptions()
                 options.headless = self._headless
-                options.add_argument("--window-size=%s" % "1920,1080")
+                options.add_argument("--window-size=%s" % f"{width},{height}")
+                if rem_warning:
+                    options.add_argument("--disable-infobars")  # removes a warning
+                if full_screen:
+                    options.add_argument("--kiosk")  # open in full screen
                 if self._user_agent:
                     u_agent = self._get_user_agent()
                     print(Fore.YELLOW + '[INFO]', Style.RESET_ALL + f" user-agent: {u_agent}")
@@ -233,6 +240,9 @@ class WebDriver(Parser):
                         driver.capabilities["version"]
                     )
                 if not is_patched:
+                    err_log("webDriver[get_driver]",
+                            "[ERR] Please update the chromedriver.exe in the webdriver folder "
+                            "according to your chrome version: https://chromedriver.chromium.org/downloads")
                     sys.exit(
                         "[ERR] Please update the chromedriver.exe in the webdriver folder "
                         "according to your chrome version: https://chromedriver.chromium.org/downloads"

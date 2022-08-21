@@ -22,7 +22,7 @@ SHEET_NAME = 'Лист1'  # заказчика
 # SPREADSHEET_ID = '1yBwm1qTuVjth5OoFKkK8U0FTmrKZ52ZHS1dsz3BuubA'  # мой
 # SHEET_ID = 0  # мой
 # SHEET_NAME = 'Лист1'  # мой
-HEADER = ['Корпус', 'Секция', 'Этаж', '№ на этаже', 'Тип', 'Площадь', 'Цена']
+HEADER = ['Корпус', 'Секция', 'Этаж', '№ на этаже', 'Тип', 'Площадь', 'Цена', 'Статус']
 
 data = []
 
@@ -84,10 +84,11 @@ class SiteParser(QThread):
         self.info_msg(f'start parser: {self.name}')
         self._create_driver()
         data_ = pars_data(self)
+        count = 0 if data_ is None else len(data_)
         if data_ and len(data_) > 0:
             gspread_update(data_, HEADER, SPREADSHEET_ID, SHEET_ID)  # gspread update_sheet_data()
-        self.app.parser_result(self.name, len(data), time() - self.time)
-        self.app.next_parser(self.name)
+        self.app.parser_result(self.name, count, time() - self.time)
+        self.app.next_parser(self.name, self.stream)
         try:
             self.driver.close()
         except Exception as e:
@@ -111,7 +112,7 @@ def pars_data(parser):
     for el in els:
         if not app.run:
             return None
-        block_, section_, floor_, flat_, type_, area_, price_ = '', '', '', '', '', '', ''
+        block_, section_, floor_, flat_, type_, area_, price_, status_ = '', '', '', '', '', '', '', ''
         # Комнат + площадь
         try:
             text = el.find_element(By.XPATH, './div[2]/p').text
@@ -146,7 +147,14 @@ def pars_data(parser):
             flat_ = driver_1.get_element(el).text.strip()
         except Exception as e:
             err_log(SITE_NAME + ' get_flat_info [№ на этаже]', str(e))
-        row = [block_, section_, floor_, flat_, type_, area_, price_]
+        try:
+            text = driver_1.get_element(
+                (By.XPATH,
+                 '//*[@id="InfoWrapper"]/div[1]/div/div/div/div[1]/div[3]/div/div/div[2]')).text.strip().lower()
+            status_ = 'бронь' if 'забронирована' in text else ''
+        except Exception as e:
+            pass
+        row = [block_, section_, floor_, flat_, type_, area_, price_, status_]
         parser.add_row_info(row)
     driver_1.close()
     return data

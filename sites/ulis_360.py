@@ -5,23 +5,24 @@ from PyQt5.QtCore import QThread
 from colorama import Fore, Style
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from MessagePack.message import err_log
+from MessagePack.message import err_log, print_exception_msg
 from WebDriverPack import WebDriver
 from WebDriverPack.webDriver import try_func, timer_func
 from g_gspread import update_sheet_data as gspread_update
+from bs4 import BeautifulSoup as Bs
 import numpy as np
 
-HEADLESS = True
-SITE_NAME = 'eskadra-development.ru'
-SITE_URL = 'https://eskadra-development.ru/live-property/choose/?f[perpage]=all&f[sort]=&f[sort_dst]=&f[price1]=0&f[' \
-           'price2]=11+778+679&f[sq1]=26&f[sq2]=157&f[floor1]=1&f[floor2]=23&f[smart_type]=1 '
-SPREADSHEET_ID = '128PrfeWxOpEvYmZ1imHkK6KOOTvfm3ggjbpxDduxs8s'  # заказчика
-SHEET_ID = 0  # заказчика
-SHEET_NAME = 'Лист1'  # заказчика
-# SPREADSHEET_ID = '1l69nz3ZnKccITNfC2dOQkr9uhUPZETBvIFPjNQHMyyo'  # мой
-# SHEET_ID = 0  # мой
-# SHEET_NAME = 'Лист1'  # мой
-HEADER = ['Объект', 'Квартира', 'Этаж', 'Площадь', 'Цена', 'Статус']
+HEADLESS = False
+SITE_NAME = 'ЖК "Улис 360'
+SITE_URL = 'https://vladivostok.domclick.ru/search?deal_type=sale&category=living&offset=0&complex_ids=116166' \
+           '&complex_name=%D0%96%D0%9A%20%D0%A3%D0%9B%D0%98%D0%A1%D0%A1%20360 '
+# SPREADSHEET_ID = '1eFEcxUxlLMvh9vFGx9MCC0fxoC8CdC0mry7xI9bJWB0'  # заказчика
+# SHEET_ID = 0  # заказчика
+# SHEET_NAME = 'Лист1'  # заказчика
+SPREADSHEET_ID = '1yp72jnseJuCE3sCIMlpQcLJh1xRpMAzKlK5AYR1a7_Q'  # мой
+SHEET_ID = 0  # мой
+SHEET_NAME = 'Лист1'  # мой
+HEADER = ['Дом', 'Этаж', 'Квартира', 'Площадь', 'Цена']
 
 data = []
 
@@ -61,10 +62,10 @@ class SiteParser(QThread):
 
     def _create_driver(self):
         try:
-            self.driver = WebDriver(headless=HEADLESS)
+            self.driver = WebDriver(headless=HEADLESS, rem_warning=True)
             self.driver.get_page(SITE_URL)
             for i in range(5):
-                els = self.driver.get_elements((By.CSS_SELECTOR, '#flats_cont > div.flats.cleaner > div.item > a'))
+                els = self.driver.get_elements((By.CSS_SELECTOR, 'div.window > div > svg > path'))
                 if not els or len(els) == 0:
                     sleep(uniform(1, 5))
                     self.driver.close()
@@ -97,35 +98,4 @@ def pars_data(parser):
     data.clear()
     app = parser.app
     driver = parser.driver
-    driver.driver.maximize_window()
-    els = driver.get_elements((By.CSS_SELECTOR, '#flats_cont > div.flats.cleaner > div.item'))
-    parser.info_msg(f'Квартиры: {len(els)}')
-    for el in els:
-        if not app.run:
-            return None
-        row = []
-        obj, flat, floor, square, price, status = '', '', '', '', '', ''
-        if 'цена:' in el.text.lower():
-            try:
-                text = el.text
-                flat = text.split('№')[0] + ' №' + text.split('№')[1].split('\n')[0]
-            except Exception as e:
-                err_log('pars_data [Квартира]', str(e))
-            try:
-                text = el.find_element(By.CSS_SELECTOR, 'span').text
-                obj = text.split('Площадь:')[0].strip()
-                square = text.split('Площадь:')[1].split('Этаж:')[0].strip()
-                floor = text.split('Этаж:')[1].split('Цена:')[0].strip()
-                price = text.split('Цена:')[1].strip()
-            except Exception as e:
-                err_log(SITE_NAME + ' pars_data [Объект, площадь, этаж, цена]', str(e))
-            try:
-                status = el.find_element(By.CSS_SELECTOR, 'div.booked')
-                if status:
-                    status = 'забронировано'
-            except Exception as e:
-                pass
-            row.extend([obj, flat, floor, square, price, status])
-            parser.add_row_info(row)
-    return data
-
+    # driver.driver.maximize_window()

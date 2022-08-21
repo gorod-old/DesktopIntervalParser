@@ -5,23 +5,24 @@ from PyQt5.QtCore import QThread
 from colorama import Fore, Style
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+
 from MessagePack.message import err_log
 from WebDriverPack import WebDriver
 from WebDriverPack.webDriver import try_func, timer_func
 from g_gspread import update_sheet_data as gspread_update
+from bs4 import BeautifulSoup as Bs
 import numpy as np
 
 HEADLESS = True
-SITE_NAME = 'eskadra-development.ru'
-SITE_URL = 'https://eskadra-development.ru/live-property/choose/?f[perpage]=all&f[sort]=&f[sort_dst]=&f[price1]=0&f[' \
-           'price2]=11+778+679&f[sq1]=26&f[sq2]=157&f[floor1]=1&f[floor2]=23&f[smart_type]=1 '
-SPREADSHEET_ID = '128PrfeWxOpEvYmZ1imHkK6KOOTvfm3ggjbpxDduxs8s'  # заказчика
+SITE_NAME = 'ЖК Восточный Луч'
+SITE_URL = 'https://vlzu.ru/apartments'
+SPREADSHEET_ID = '1WIiT4dvlGu-TNLqyHHsM1RL15m8VRiMGp57kX7GPbpw'  # заказчика
 SHEET_ID = 0  # заказчика
 SHEET_NAME = 'Лист1'  # заказчика
-# SPREADSHEET_ID = '1l69nz3ZnKccITNfC2dOQkr9uhUPZETBvIFPjNQHMyyo'  # мой
+# SPREADSHEET_ID = '1YPP7pzMZ5jaHl-2jkcO0_mJhozawBnjjTcl6JYX6O6E'  # мой
 # SHEET_ID = 0  # мой
 # SHEET_NAME = 'Лист1'  # мой
-HEADER = ['Объект', 'Квартира', 'Этаж', 'Площадь', 'Цена', 'Статус']
+HEADER = ['Дом', 'Этаж', '№ квартиры', 'Тип', 'Площадь', 'Цена']
 
 data = []
 
@@ -64,7 +65,8 @@ class SiteParser(QThread):
             self.driver = WebDriver(headless=HEADLESS)
             self.driver.get_page(SITE_URL)
             for i in range(5):
-                els = self.driver.get_elements((By.CSS_SELECTOR, '#flats_cont > div.flats.cleaner > div.item > a'))
+                els = self.driver.get_elements(
+                    (By.CSS_SELECTOR, '#__next'))
                 if not els or len(els) == 0:
                     sleep(uniform(1, 5))
                     self.driver.close()
@@ -98,34 +100,50 @@ def pars_data(parser):
     app = parser.app
     driver = parser.driver
     driver.driver.maximize_window()
-    els = driver.get_elements((By.CSS_SELECTOR, '#flats_cont > div.flats.cleaner > div.item'))
-    parser.info_msg(f'Квартиры: {len(els)}')
-    for el in els:
+    num = 0
+    num_1 = 0
+    i = 1
+    while True:
         if not app.run:
             return None
-        row = []
-        obj, flat, floor, square, price, status = '', '', '', '', '', ''
-        if 'цена:' in el.text.lower():
+        url = f'https://vlzu.ru/apartments?page={i}'
+        driver.get_page(url)
+        sleep(1)
+        html = driver.driver.page_source
+        soup = Bs(html, 'html.parser')
+        els = soup.find_all("div", {"class": "CardBox_inner__3jq_2"})
+        parser.info_msg(f'Квартиры: {len(els)}')
+        if len(els) == 0:
+            break
+        num_1 += len(els)
+        for el in els:
+            if not app.run:
+                return None
+            house_, floor_, flat_, type_, area_, price_ = '', '', '', '', '', ''
             try:
-                text = el.text
-                flat = text.split('№')[0] + ' №' + text.split('№')[1].split('\n')[0]
-            except Exception as e:
-                err_log('pars_data [Квартира]', str(e))
-            try:
-                text = el.find_element(By.CSS_SELECTOR, 'span').text
-                obj = text.split('Площадь:')[0].strip()
-                square = text.split('Площадь:')[1].split('Этаж:')[0].strip()
-                floor = text.split('Этаж:')[1].split('Цена:')[0].strip()
-                price = text.split('Цена:')[1].strip()
-            except Exception as e:
-                err_log(SITE_NAME + ' pars_data [Объект, площадь, этаж, цена]', str(e))
-            try:
-                status = el.find_element(By.CSS_SELECTOR, 'div.booked')
-                if status:
-                    status = 'забронировано'
-            except Exception as e:
-                pass
-            row.extend([obj, flat, floor, square, price, status])
-            parser.add_row_info(row)
-    return data
+                href = el.find('a', {"class": "CardBox_link__3yLNB"})['href']
+                href = 'https://vlzu.ru' + href
+                price = el.find('div', {"class": "CardBox_price__2KWJD"}).getText(strip=True)
+                price_ = price.split('₽')[0] + ' ₽'
+                driver.get_page(href)
+                sleep(2)
+                html_ = driver.driver.page_source
+                soup_ = Bs(html_, "html.parser")
+                el_ = soup_.find('ul', {"class": "ApartmentInfo_prop__192RT"})
+                house_ = el_.find("div", string="Номер дома").next_sibling.getText(strip=True)
+                floor_ = el_.find("div", string="Этаж").next_sibling.getText(strip=True)
+                flat_ = el_.find("div", string="Номер квартиры").next_sibling.getText(strip=True)
+                text = soup_.find('div', {"class": "ApartmentInfo_name__3xInL"}).getText(strip=True)
+                type_ = text.split(',')[0].strip().replace(' ', '')
+                area_ = text.split(',')[1].strip() + ' м²'
 
+                num += 1
+            except Exception as e:
+                print(SITE_NAME + ' error, page:', i)
+                err_log(SITE_NAME + ' pars_data [all]', str(e))
+            row = [house_, floor_, flat_, type_, area_, price_]
+            parser.add_row_info(row)
+        i += 1
+    parser.info_msg(f'Страниц: {i - 1}')
+    print(num, num_1)
+    return data

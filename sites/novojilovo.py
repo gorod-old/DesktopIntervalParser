@@ -5,8 +5,7 @@ from PyQt5.QtCore import QThread
 from colorama import Fore, Style
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-
-from MessagePack.message import err_log
+from MessagePack.message import err_log, print_exception_msg
 from WebDriverPack import WebDriver
 from WebDriverPack.webDriver import try_func, timer_func
 from g_gspread import update_sheet_data as gspread_update
@@ -14,12 +13,12 @@ from bs4 import BeautifulSoup as Bs
 import numpy as np
 
 HEADLESS = True
-SITE_NAME = 'Золотая долина'
-SITE_URL = 'http://золотая-долина25.рф/vybrat-kvartiru-2'
-SPREADSHEET_ID = '1l36TjgHYQUOC3Xn9Y4meqMzc0-y7bBQj3sHUx2FXyE0'  # заказчика
+SITE_NAME = 'ЖК "Новожилово'
+SITE_URL = 'http://dskvl.ru/order'
+SPREADSHEET_ID = '19Wd57CZWzdtmlRm7qaB5R_ObyHrtL5ewo4kESt2s5Sg'  # заказчика
 SHEET_ID = 0  # заказчика
 SHEET_NAME = 'Лист1'  # заказчика
-# SPREADSHEET_ID = '13XINVPnlGCM_ewe49tyXtbpEF8Ye-ZPWZFtvItKI4Z8'  # мой
+# SPREADSHEET_ID = '1cbgCbL6mDB-mEN_Vs5gBk3R6COBHdzii6dkRF-0dlYA'  # мой
 # SHEET_ID = 0  # мой
 # SHEET_NAME = 'Лист1'  # мой
 HEADER = ['Дом', 'Этаж', 'Квартира', 'Площадь', 'Цена']
@@ -62,10 +61,10 @@ class SiteParser(QThread):
 
     def _create_driver(self):
         try:
-            self.driver = WebDriver(headless=HEADLESS)
+            self.driver = WebDriver(headless=HEADLESS, rem_warning=True)
             self.driver.get_page(SITE_URL)
             for i in range(5):
-                els = self.driver.get_elements((By.CSS_SELECTOR, '#scroller > svg > path'))
+                els = self.driver.get_elements((By.CSS_SELECTOR, 'div.window > div > svg > path'))
                 if not els or len(els) == 0:
                     sleep(uniform(1, 5))
                     self.driver.close()
@@ -93,50 +92,61 @@ class SiteParser(QThread):
 
 
 @timer_func
-@try_func
+# @try_func
 def pars_data(parser):
     data.clear()
     app = parser.app
     driver = parser.driver
-    driver.driver.maximize_window()
-    els = driver.get_elements((By.CSS_SELECTOR, '#scroller > svg > path'))
+    # driver.driver.maximize_window()
+    els = driver.get_elements((By.CSS_SELECTOR, 'div.window > div > svg > path'))
     parser.info_msg(f'Этажи: {len(els)}')
     rng = len(els)
     for floor in range(0, rng, 1):
         if not app.run:
             return None
         check = False
+        d, f = '', ''
         try:
-            if 0 <= floor <= 8 or 19 <= floor <= 25 or floor == 38:
-                webdriver.ActionChains(driver.driver).move_to_element(els[floor]).move_by_offset(0, 10).click().perform()
-            elif floor == 9 or floor == 26:
-                webdriver.ActionChains(driver.driver).move_to_element(els[floor]).move_by_offset(0, -30).click().perform()
-            elif 10 <= floor <= 18 or floor == 39 or 27 <= floor <= 37 or 41 <= floor <= 42:
+            if 7 <= floor <= 11 or 40 <= floor <= 46:
                 webdriver.ActionChains(driver.driver).move_to_element(els[floor]).move_by_offset(0, -10).click().perform()
-            sleep(1)
-            frame = driver.get_elements((By.CSS_SELECTOR, 'body > div.mfp-wrap.mfp-close-btn-in.mfp-auto-cursor.mfp'
-                                                          '-ready > div > div.mfp-content > div > iframe'))[0]
-            driver.driver.switch_to.frame(frame)
-            el = driver.get_element((By.CSS_SELECTOR, '#blockquote > h2')).text
-            d = int(el.split('дом')[0].strip()) if 'дом' in el else 1
-            f = int(el.split('Этаж')[1].strip())
-            parser.info_msg(f'Дом: {d}, Этаж: {f}, Индекс: {floor}')
-            check = True
+            elif 12 <= floor <= 15:
+                webdriver.ActionChains(driver.driver).move_to_element(els[floor]).move_by_offset(0, -220).click().perform()
+            elif 16 <= floor <= 22:
+                webdriver.ActionChains(driver.driver).move_to_element(els[floor]).move_by_offset(0, -240).click().perform()
+            elif 23 <= floor <= 31:
+                pass
+            elif 47 <= floor <= 53:
+                webdriver.ActionChains(driver.driver).move_to_element(els[floor]).move_by_offset(0, -30).click().perform()
+            elif floor == 54:
+                webdriver.ActionChains(driver.driver).move_to_element(els[floor]).move_by_offset(0, -40).click().perform()
+            else:
+                webdriver.ActionChains(driver.driver).move_to_element(els[floor]).move_by_offset(0, 5).click().perform()
+
+            if 23 <= floor <= 31:
+                check = True
+            else:
+                frame = driver.get_elements((By.CSS_SELECTOR, 'body > div.mfp-wrap.mfp-close-btn-in.mfp-auto-cursor.mfp'
+                                                              '-ready > div > div.mfp-content > div > iframe'))[0]
+                driver.driver.switch_to.frame(frame)
+                el = driver.get_element((By.CSS_SELECTOR, '#blockquote > h2')).text
+                d = int(el.split('Этаж ')[0].split('Дом ')[1].strip())
+                f = int(el.split('Этаж ')[1].strip())
+                parser.info_msg(f'Дом: {d} Этаж: {f} Этаж (индекс): {floor}')
+                check = True
         except Exception as e:
-            # err_log('pars_data [Этаж клик]', str(e))
+            err_log(SITE_NAME + 'pars_data [Дом, Этаж]', str(e))
             pass
         if check:
             # Квартиры
-            get_flat_info(driver, f, d, floor, app, parser)
+            get_flat_info(driver, d, f, floor, app, parser)
             driver.driver.switch_to.default_content()
             driver.get_page(SITE_URL)
             sleep(1)
-            els = driver.get_elements((By.CSS_SELECTOR, '#scroller > svg > path'))
-        # break
+            els = driver.get_elements((By.CSS_SELECTOR, 'div.window > div > svg > path'))
     return data
 
 
-def get_flat_info(driver, f, d, floor, app, parser):
+def get_flat_info(driver, d, f, floor, app, parser):
     hints = driver.get_elements((By.CSS_SELECTOR, '#body_hint > div > div.flag-text'))
     els = driver.get_elements((By.CSS_SELECTOR, '#scroller > svg > path'))
     rng = len(hints)/2
@@ -153,11 +163,14 @@ def get_flat_info(driver, f, d, floor, app, parser):
             return
         check = False
         html = None
-        offset_x, offset_y = 0, 32
-        for j in range(2):
+        offset_x, offset_y = 0, 55
+        for j in range(3):
             try:
+                img = driver.get_element((By.CSS_SELECTOR, '#scroller > svg > image'))
+                driver.driver.execute_script("arguments[0].scrollIntoView();", img)
+                sleep(1)
                 action = webdriver.ActionChains(driver.driver)
-                action.move_by_offset(200, 200).perform()
+                action.move_to_element(img).perform()
                 action.move_to_element(hints[index]).move_by_offset(offset_x, offset_y).click().perform()
                 action.reset_actions()
                 sleep(2)
@@ -167,9 +180,9 @@ def get_flat_info(driver, f, d, floor, app, parser):
                 if check:
                     break
             except Exception as e:
-                offset_x -= 90
-                offset_y -= 100
-                # err_log('get_flat_info [action]', str(e))
+                offset_x += 5
+                offset_y += 5
+                err_log(SITE_NAME + f' get_flat_info [action], house: {d}, floor: {f}', str(e))
                 pass
         row = [d, f]
         if check:
@@ -178,7 +191,7 @@ def get_flat_info(driver, f, d, floor, app, parser):
             # Номер квартиры
             try:
                 txt = soup.select('body > div.apartment-info-box > h1')[0].getText()
-                flat_ = int(txt.split('Квартира №')[1].split(' ')[0].strip())
+                flat_ = txt.split('Квартира ')[1].split(' ')[0].strip()
             except Exception as e:
                 err_log(SITE_NAME + ' get_flat_info [квартира]', str(e))
             # Площадь
@@ -194,7 +207,7 @@ def get_flat_info(driver, f, d, floor, app, parser):
             except Exception as e:
                 err_log(SITE_NAME + ' get_flat_info [цена]', str(e))
             row.extend([flat_, area_, price_])
-            parser.add_row_info(row, floor, flat_)
+            parser.add_row_info(row, floor + 2, flat_)
 
             if i < len(index_list) - 1:
                 driver.driver.back()
@@ -203,5 +216,3 @@ def get_flat_info(driver, f, d, floor, app, parser):
                                                               '-ready > div > div.mfp-content > div > iframe'))[0]
                 driver.driver.switch_to.frame(frame)
                 hints = driver.get_elements((By.CSS_SELECTOR, '#body_hint > div > div.flag-text'))
-
-

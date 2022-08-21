@@ -24,9 +24,14 @@ from sites.jk_zolotaya_dolina_rf import SiteParser as Parser_8
 from sites.jk_lastochka_ru import SiteParser as Parser_9
 from sites.bosforskiy_park import SiteParser as Parser_10
 from sites.jk_leto import SiteParser as Parser_11
-
-parsers = [Parser_1, Parser_2, Parser_3, Parser_4, Parser_5, Parser_6, Parser_7, Parser_8, Parser_9,
-           Parser_10, Parser_11]
+from sites.vostochniy_luch import SiteParser as Parser_12
+from sites.novojilovo import SiteParser as Parser_13
+from sites.admiralteiskyi import SiteParser as Parser_14
+from sites.klenovyi import SiteParser as Parser_15
+from sites.dolina import SiteParser as Parser_16
+from sites.emerald import SiteParser as Parser_17
+from sites.domino import SiteParser as Parser_18
+from sites.akvamarin import SiteParser as Parser_19
 
 
 class QTTimer(QThread):
@@ -99,6 +104,15 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
             self.label_9.text(): Parser_9,
             self.label_10.text(): Parser_10,
             self.label_11.text(): Parser_11,
+            self.label_12.text(): Parser_12,
+            self.label_13.text(): Parser_13,
+            self.label_14.text(): Parser_14,
+            self.label_15.text(): Parser_15,
+            self.label_16.text(): Parser_16,
+            self.label_17.text(): Parser_17,
+            self.label_18.text(): Parser_18,
+            self.label_19.text(): Parser_19,
+            # self.label_20.text(): Parser_20,
         }
 
         self._app_setup()
@@ -107,8 +121,10 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self._interval = 1
         self._interval_timer = None
 
-        self._n_list = []  # список названий запущенных парсеров
-        self._p_list = []  # список запущенных парсеров
+        self._n_list = []  # список названий запущенных (работающих в данный момент) парсеров
+        self._p_list = []  # список запущенных (работающих в данный момент) парсеров
+        self._s_list = []  # in use stream numbers
+        self._check_list = []  # список выбранных парсеров которые еще не запускались
 
         self.setWindowTitle(marker)  # Устанавливаем заголовок окна
         self.startTime.setText('00:00:00')
@@ -131,6 +147,15 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.siteButton_9.clicked.connect(self._site_click_9)
         self.siteButton_10.clicked.connect(self._site_click_10)
         self.siteButton_11.clicked.connect(self._site_click_11)
+        self.siteButton_12.clicked.connect(self._site_click_12)
+        self.siteButton_13.clicked.connect(self._site_click_13)
+        self.siteButton_14.clicked.connect(self._site_click_14)
+        self.siteButton_15.clicked.connect(self._site_click_15)
+        self.siteButton_16.clicked.connect(self._site_click_16)
+        self.siteButton_17.clicked.connect(self._site_click_17)
+        self.siteButton_18.clicked.connect(self._site_click_18)
+        self.siteButton_19.clicked.connect(self._site_click_19)
+        # self.siteButton_20.clicked.connect(self._site_click_20)
 
     @property
     def run(self):
@@ -224,26 +249,61 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         if not self._run:
             return
         beep()
+        for name in self._sites:
+            if len(self._check_list) < len(self._sites) and name not in self._check_list:
+                self._check_list.append(name)
+
         if len(self._n_list) == 0:
             self._p_list.clear()
-        stream = 0 if len(self._n_list) == 0 else len(self._sites)
-        for name in self._sites:
+            self._s_list.clear()
+
+        print_info_msg(f'cpu count: {self._cpu}, now running: {len(self._n_list)}')
+        num = self._cpu - len(self._n_list)
+        print_info_msg(f'number of free threads: {num}')
+        for i in range(num):
+            self._add_parser()
+
+    def _add_parser(self):
+        if len(self._check_list) == 0:
+            print('All selected sites have been started and will be re-run the next time the interval is started.')
+            return
+        j = 0
+        while j < len(self._check_list):
+            name = self._check_list[j]
             if name not in self._n_list:
-                stream += 1
+                stream = self._get_stream()
                 self._n_list.append(name)
                 self._p_list.append(self._parsers[name](self, name, stream))
                 self._p_list[-1].start()
+                self._check_list.remove(name)
+
+                # add start info to console
+                item = QListWidgetItem(f'старт {name}')
+                item.setForeground(Qt.blue)
+                self.resultListWidget.addItem(item)
+                self.resultListWidget.scrollToBottom()
+                break
             else:
                 print(f'parser {name} is still running, cancel launch!')
+            j += 1
 
-    def next_parser(self, name):
+    def next_parser(self, name, stream):
         # TODO: продумать логику замены или добавления парсеров при ограничении по CPU
         print(f'parser {name} - finished work')
         if not self._run:
             return
         if name in self._n_list:
             self._n_list.remove(name)
+        if stream in self._s_list:
+            self._s_list.remove(stream)
         print('running list:', self._n_list)
+        self._add_parser()
+
+    def _get_stream(self):
+        for n in range(len(self._sites)):
+            if n not in self._s_list:
+                self._s_list.append(n)
+                return n
 
     def parser_result(self, name, count, time_delta):
         end_time = datetime.now()
@@ -313,6 +373,42 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.label_11.setStyleSheet(
             'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
             if self.label_11.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_12.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_12.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_13.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_13.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_14.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_14.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_15.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_15.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_16.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_16.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_17.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_17.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_18.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_18.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_19.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_19.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_20.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_20.text() in self._sites else
             'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
 
     def _save_app_setup(self):
@@ -441,4 +537,103 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.label_11.setStyleSheet(
             'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
             if self.label_11.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_12(self):
+        if self.label_12.text() in self._sites:
+            self._sites.remove(self.label_12.text())
+        else:
+            self._sites.append(self.label_12.text())
+        self._save_app_setup()
+        self.label_12.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_12.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_13(self):
+        if self.label_13.text() in self._sites:
+            self._sites.remove(self.label_13.text())
+        else:
+            self._sites.append(self.label_13.text())
+        self._save_app_setup()
+        self.label_13.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_13.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_14(self):
+        if self.label_14.text() in self._sites:
+            self._sites.remove(self.label_14.text())
+        else:
+            self._sites.append(self.label_14.text())
+        self._save_app_setup()
+        self.label_14.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_14.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_15(self):
+        if self.label_15.text() in self._sites:
+            self._sites.remove(self.label_15.text())
+        else:
+            self._sites.append(self.label_15.text())
+        self._save_app_setup()
+        self.label_15.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_15.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_16(self):
+        if self.label_16.text() in self._sites:
+            self._sites.remove(self.label_16.text())
+        else:
+            self._sites.append(self.label_16.text())
+        self._save_app_setup()
+        self.label_16.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_16.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_17(self):
+        if self.label_17.text() in self._sites:
+            self._sites.remove(self.label_17.text())
+        else:
+            self._sites.append(self.label_17.text())
+        self._save_app_setup()
+        self.label_17.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_17.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_18(self):
+        if self.label_18.text() in self._sites:
+            self._sites.remove(self.label_18.text())
+        else:
+            self._sites.append(self.label_18.text())
+        self._save_app_setup()
+        self.label_18.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_18.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_19(self):
+        if self.label_19.text() in self._sites:
+            self._sites.remove(self.label_19.text())
+        else:
+            self._sites.append(self.label_19.text())
+        self._save_app_setup()
+        self.label_19.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_19.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_20(self):
+        if self.label_20.text() in self._sites:
+            self._sites.remove(self.label_20.text())
+        else:
+            self._sites.append(self.label_20.text())
+        self._save_app_setup()
+        self.label_20.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_20.text() in self._sites else
             'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')

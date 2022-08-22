@@ -22,7 +22,7 @@ SHEET_NAME = 'Лист1'  # заказчика
 # SPREADSHEET_ID = '1YPP7pzMZ5jaHl-2jkcO0_mJhozawBnjjTcl6JYX6O6E'  # мой
 # SHEET_ID = 0  # мой
 # SHEET_NAME = 'Лист1'  # мой
-HEADER = ['Дом', 'Этаж', '№ квартиры', 'Тип', 'Площадь', 'Цена']
+HEADER = ['Дом', 'Этаж', '№ квартиры', 'Тип', 'Площадь', 'Цена', 'Очередь']
 
 data = []
 
@@ -108,40 +108,78 @@ def pars_data(parser):
             return None
         url = f'https://vlzu.ru/apartments?page={i}'
         driver.get_page(url)
-        sleep(1)
+        sleep(3)
         html = driver.driver.page_source
         soup = Bs(html, 'html.parser')
         els = soup.find_all("div", {"class": "CardBox_inner__3jq_2"})
-        parser.info_msg(f'Квартиры: {len(els)}')
+        parser.info_msg(f'Страница: {i}, Квартиры: {len(els)}')
         if len(els) == 0:
             break
         num_1 += len(els)
         for el in els:
             if not app.run:
                 return None
-            house_, floor_, flat_, type_, area_, price_ = '', '', '', '', '', ''
+            href = None
+            house_, floor_, flat_, type_, area_, price_, queue_ = '', '', '', '', '', '', ''
+            # Очередь
+            try:
+                text = el.find('div', {"class": "CardBox_description__2Wp3_"}).getText(strip=True)
+                queue_ = text.split('Восточный луч')[1].strip()
+            except Exception as e:
+                err_log(SITE_NAME + f' get_flat_info [queue_], page: {i}', str(e))
+            # Цена
+            try:
+                price = el.find('div', {"class": "CardBox_price__2KWJD"}).getText(strip=True)
+                price_ = price.split('₽')[0] + ' ₽'
+            except Exception as e:
+                err_log(SITE_NAME + f' get_flat_info [price_], page: {i}', str(e))
+            # href
             try:
                 href = el.find('a', {"class": "CardBox_link__3yLNB"})['href']
                 href = 'https://vlzu.ru' + href
-                price = el.find('div', {"class": "CardBox_price__2KWJD"}).getText(strip=True)
-                price_ = price.split('₽')[0] + ' ₽'
+            except Exception as e:
+                err_log(SITE_NAME + f' get_flat_info [href], page: {i}', str(e))
+
+            if href is not None:
                 driver.get_page(href)
-                sleep(2)
+                sleep(3)
                 html_ = driver.driver.page_source
                 soup_ = Bs(html_, "html.parser")
                 el_ = soup_.find('ul', {"class": "ApartmentInfo_prop__192RT"})
-                house_ = el_.find("div", string="Номер дома").next_sibling.getText(strip=True)
-                floor_ = el_.find("div", string="Этаж").next_sibling.getText(strip=True)
-                flat_ = el_.find("div", string="Номер квартиры").next_sibling.getText(strip=True)
-                text = soup_.find('div', {"class": "ApartmentInfo_name__3xInL"}).getText(strip=True)
-                type_ = text.split(',')[0].strip().replace(' ', '')
-                area_ = text.split(',')[1].strip() + ' м²'
+                if el_ is not None:
+                    # Дом
+                    try:
+                        house_ = el_.find("div", string="Номер дома").next_sibling.getText(strip=True)
+                    except Exception as e:
+                        err_log(SITE_NAME + f' get_flat_info [house_], page: {i}', str(e))
+                    # Этаж
+                    try:
+                        floor_ = el_.find("div", string="Этаж").next_sibling.getText(strip=True)
+                    except Exception as e:
+                        err_log(SITE_NAME + f' get_flat_info [floor_], page: {i}', str(e))
+                    # Квартира
+                    try:
+                        flat_ = el_.find("div", string="Номер квартиры").next_sibling.getText(strip=True)
+                    except Exception as e:
+                        err_log(SITE_NAME + f' get_flat_info [flat_], page: {i}', str(e))
+                    # Тип, Площадь
+                    try:
+                        text = soup_.find('div', {"class": "ApartmentInfo_name__3xInL"}).getText(strip=True)
+                        type_ = text.split(',')[0].strip()
+                        parts = text.split(',')
+                        parts.pop(0)
+                        text = ','.join(parts)
+                        area_ = text.split('м')[0].strip() + ' м²'
+                    except Exception as e:
+                        err_log(SITE_NAME + f' get_flat_info [type_, area_], page: {i}', str(e))
 
-                num += 1
-            except Exception as e:
-                print(SITE_NAME + ' error, page:', i)
-                err_log(SITE_NAME + ' pars_data [all]', str(e))
-            row = [house_, floor_, flat_, type_, area_, price_]
+                    num += 1
+                else:
+                    parser.info_msg(f'element not find! page: {i}')
+            else:
+                parser.info_msg(f'href is None! page: {i}')
+
+            row = [house_, floor_, flat_, type_, area_, price_, queue_]
             parser.add_row_info(row)
         i += 1
     parser.info_msg(f'Страниц: {i - 1}')

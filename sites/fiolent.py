@@ -1,7 +1,6 @@
-from random import uniform, choice
+from random import uniform
 from time import sleep, time
 
-import requests
 from PyQt5.QtCore import QThread
 from colorama import Fore, Style
 from selenium import webdriver
@@ -13,16 +12,16 @@ from g_gspread import update_sheet_data as gspread_update
 from bs4 import BeautifulSoup as Bs
 import numpy as np
 
-HEADLESS = False
-SITE_NAME = 'ЖК "Нагорный'
-SITE_URL = 'https://vladivostok.domclick.ru/complexes/zhk-nagornyi__115784?utm_referrer=https%3A%2F%2Fwww.google.com%2F'
-SPREADSHEET_ID = '1nnBCs9SBAg-5xlFmWPaNWaBDGL87AM0ADp-kVLAFWqg'  # заказчика
+HEADLESS = True
+SITE_NAME = 'ЖК "Фиолент'
+SITE_URL = 'https://leo-development.ru/catalog/2'
+SPREADSHEET_ID = '1eFEcxUxlLMvh9vFGx9MCC0fxoC8CdC0mry7xI9bJWB0'  # заказчика
 SHEET_ID = 0  # заказчика
 SHEET_NAME = 'Лист1'  # заказчика
-# SPREADSHEET_ID = '1tP8k_sPupI240GmoXYw1IiMvY4vXGC8z-Yt6FaPva4M'  # мой
+# SPREADSHEET_ID = '1yp72jnseJuCE3sCIMlpQcLJh1xRpMAzKlK5AYR1a7_Q'  # мой
 # SHEET_ID = 0  # мой
 # SHEET_NAME = 'Лист1'  # мой
-HEADER = ['Дом', 'Этаж', 'Квартира', 'Площадь', 'Цена']
+HEADER = ['Этаж', 'Квартира', 'Комнат', 'Площадь', 'Цена']
 
 data = []
 
@@ -64,17 +63,17 @@ class SiteParser(QThread):
         try:
             self.driver = WebDriver(headless=HEADLESS, rem_warning=True)
             self.driver.get_page(SITE_URL)
-            # for i in range(5):
-            #     els = self.driver.get_elements((By.CSS_SELECTOR, 'sc_pagination_button'))
-            #     if not els or len(els) == 0:
-            #         sleep(uniform(1, 5))
-            #         self.driver.close()
-            #         self.driver = WebDriver(headless=HEADLESS)
-            #         self.driver.get_page(SITE_URL)
-            #     else:
-            #         break
-
-            # self.driver = None
+            for i in range(5):
+                els = self.driver.get_elements(
+                    (By.CSS_SELECTOR, '#main > section > div > div.catalog__list.catalog_list > '
+                                      'div.catalog_list__wrapper > a'))
+                if not els or len(els) == 0:
+                    sleep(uniform(1, 5))
+                    self.driver.close()
+                    self.driver = WebDriver(headless=HEADLESS)
+                    self.driver.get_page(SITE_URL)
+                else:
+                    break
         except Exception as e:
             err_log(SITE_NAME + '_create_driver', str(e))
 
@@ -97,34 +96,43 @@ class SiteParser(QThread):
 @timer_func
 @try_func
 def pars_data(parser):
-    # data.clear()
-    # app = parser.app
-    # driver = parser.driver
-    # # driver.driver.maximize_window()
-    # pag_bts = driver.get_elements((By.CSS_SELECTOR, 'sc_pagination_button'))
-    # parser.info_msg(f'Страниц: {len(pag_bts)}')
-    # for bt in pag_bts:
-    #     bt.click()
-    sleep(100)
+    data.clear()
+    app = parser.app
+    driver = parser.driver
+    # driver.driver.maximize_window()
+    sleep(5)
+    els = driver.get_elements(
+        (By.CSS_SELECTOR, '#main > section > div > div.catalog__list.catalog_list > div.catalog_list__wrapper > a'))
+    parser.info_msg(f'Квартир: {len(els)}')
+    for el in els:
+        floor_, flat_, type_, area_, price_ = '', '', '', '', ''
+        # Этаж
+        try:
+            floor_ = el.find_element(By.XPATH, './div[3]/p').text.strip()
+        except Exception as e:
+            err_log(SITE_NAME + " pars_data [floor_]", str(e))
+        # Квартира
+        try:
+            flat_ = el.find_element(By.XPATH, './div[2]/p').text.strip()
+        except Exception as e:
+            err_log(SITE_NAME + " pars_data [flat_]", str(e))
+        # Комнат
+        try:
+            type_ = el.find_element(By.XPATH, './div[5]/p').text.strip()
+        except Exception as e:
+            err_log(SITE_NAME + " pars_data [type_]", str(e))
+        # Площадь
+        try:
+            area_ = el.find_element(By.XPATH, './div[4]/p').text.strip()
+        except Exception as e:
+            err_log(SITE_NAME + " pars_data [area_]", str(e))
+        # Цена
+        try:
+            price_ = el.find_element(By.XPATH, './div[6]/p').text.strip()
+        except Exception as e:
+            err_log(SITE_NAME + " pars_data [price_]", str(e))
 
-    # ua_list = get_user_agents_list()
-    # user_agent = {
-    #     'user-agent': choice(ua_list),
-    #     'accept': '*/*'
-    # }
-    # r = request_data(SITE_URL, user_agent, None)
-    #
-    # print(r.text)
+        row = [floor_, flat_, type_, area_, price_]
+        parser.add_row_info(row)
 
-
-def request_data(url, headers=None, proxies=None, params=None):
-    r = requests.get(url, headers=headers, proxies=proxies, params=params)
-    return r
-
-
-def get_user_agents_list():
-    ua_list = open('text_files/user-agents.txt').read().strip().split('\n')
-    for ua in ua_list:
-        if len(ua) == 0:
-            ua_list.remove(ua)
-    return ua_list
+    return data

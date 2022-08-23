@@ -32,6 +32,8 @@ from sites.dolina import SiteParser as Parser_16
 from sites.emerald import SiteParser as Parser_17
 from sites.domino import SiteParser as Parser_18
 from sites.akvamarin import SiteParser as Parser_19
+from sites.pribrejniy_dom import SiteParser as Parser_20
+from sites.fiolent import SiteParser as Parser_21
 
 
 class QTTimer(QThread):
@@ -112,7 +114,8 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
             self.label_17.text(): Parser_17,
             self.label_18.text(): Parser_18,
             self.label_19.text(): Parser_19,
-            # self.label_20.text(): Parser_20,
+            self.label_20.text(): Parser_20,
+            self.label_21.text(): Parser_21,
         }
 
         self._app_setup()
@@ -155,7 +158,8 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.siteButton_17.clicked.connect(self._site_click_17)
         self.siteButton_18.clicked.connect(self._site_click_18)
         self.siteButton_19.clicked.connect(self._site_click_19)
-        # self.siteButton_20.clicked.connect(self._site_click_20)
+        self.siteButton_20.clicked.connect(self._site_click_20)
+        self.siteButton_21.clicked.connect(self._site_click_21)
 
     @property
     def run(self):
@@ -410,6 +414,10 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
             'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
             if self.label_20.text() in self._sites else
             'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_21.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_21.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
 
     def _save_app_setup(self):
         data = {
@@ -636,4 +644,15 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.label_20.setStyleSheet(
             'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
             if self.label_20.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_21(self):
+        if self.label_21.text() in self._sites:
+            self._sites.remove(self.label_21.text())
+        else:
+            self._sites.append(self.label_21.text())
+        self._save_app_setup()
+        self.label_21.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_21.text() in self._sites else
             'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')

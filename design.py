@@ -668,8 +668,8 @@ class Ui_MainWindow(object):
         self.label_22.setObjectName("label_22")
         self.horizontalLayout_31.addWidget(self.label_22)
         self.siteButton_22 = QtWidgets.QPushButton(self.centralwidget)
-        self.siteButton_22.setStyleSheet("color: rgb(255, 255, 255);\n"
-"background-color: rgb(122, 122, 122);")
+        self.siteButton_22.setStyleSheet("background-color: rgb(0, 0, 0);\n"
+"color: rgb(255, 255, 255);")
         self.siteButton_22.setObjectName("siteButton_22")
         self.horizontalLayout_31.addWidget(self.siteButton_22)
         self.verticalLayout_9.addLayout(self.horizontalLayout_31)
@@ -920,7 +920,7 @@ class Ui_MainWindow(object):
         self.siteButton_20.setText(_translate("MainWindow", "Вкл/Выкл"))
         self.label_21.setText(_translate("MainWindow", "ЖК \"Фиолент\""))
         self.siteButton_21.setText(_translate("MainWindow", "Вкл/Выкл"))
-        self.label_22.setText(_translate("MainWindow", "неактивен"))
+        self.label_22.setText(_translate("MainWindow", "ЖК \"Гармония\""))
         self.siteButton_22.setText(_translate("MainWindow", "Вкл/Выкл"))
         self.label_23.setText(_translate("MainWindow", "неактивен"))
         self.siteButton_23.setText(_translate("MainWindow", "Вкл/Выкл"))

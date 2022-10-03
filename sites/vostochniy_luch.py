@@ -124,7 +124,7 @@ def pars_data(parser):
             # Очередь
             try:
                 text = el.find('div', {"class": "CardBox_description__2Wp3_"}).getText(strip=True)
-                queue_ = text.split('Восточный луч')[1].strip()
+                queue_ = text.strip()
             except Exception as e:
                 err_log(SITE_NAME + f' get_flat_info [queue_], page: {i}', str(e))
             # Цена

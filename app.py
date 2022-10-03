@@ -34,6 +34,7 @@ from sites.domino import SiteParser as Parser_18
 from sites.akvamarin import SiteParser as Parser_19
 from sites.pribrejniy_dom import SiteParser as Parser_20
 from sites.fiolent import SiteParser as Parser_21
+from sites.jk_garmonia import SiteParser as Parser_22
 
 
 class QTTimer(QThread):
@@ -116,6 +117,7 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
             self.label_19.text(): Parser_19,
             self.label_20.text(): Parser_20,
             self.label_21.text(): Parser_21,
+            self.label_22.text(): Parser_22,
         }
 
         self._app_setup()
@@ -160,6 +162,7 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.siteButton_19.clicked.connect(self._site_click_19)
         self.siteButton_20.clicked.connect(self._site_click_20)
         self.siteButton_21.clicked.connect(self._site_click_21)
+        self.siteButton_22.clicked.connect(self._site_click_22)
 
     @property
     def run(self):
@@ -249,7 +252,6 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self._run_app()
 
     def _run_app(self):
-        # TODO: продумать логику замены или добавления парсеров при ограничении по CPU
         if not self._run:
             return
         beep()
@@ -292,7 +294,6 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
             j += 1
 
     def next_parser(self, name, stream):
-        # TODO: продумать логику замены или добавления парсеров при ограничении по CPU
         print(f'parser {name} - finished work')
         if not self._run:
             return
@@ -417,6 +418,10 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.label_21.setStyleSheet(
             'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
             if self.label_21.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_22.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_22.text() in self._sites else
             'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
 
     def _save_app_setup(self):
@@ -655,4 +660,15 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.label_21.setStyleSheet(
             'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
             if self.label_21.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_22(self):
+        if self.label_22.text() in self._sites:
+            self._sites.remove(self.label_22.text())
+        else:
+            self._sites.append(self.label_22.text())
+        self._save_app_setup()
+        self.label_22.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_22.text() in self._sites else
             'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')

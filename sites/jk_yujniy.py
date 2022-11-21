@@ -106,13 +106,14 @@ def pars_data(parser):
     driver.driver.switch_to.frame(frame)
     driver.waiting_for_element((By.XPATH, ".//p-paginator/div/button[contains(@class, 'p-paginator-next')]"), 20)
     disabled, next_bt, page = False, None, 1
+    sleep(5)
     while not disabled:
         if not app.run:
             return None
         if next_bt:
             next_bt.click()
             sleep(1)
-        sleep(uniform(.5, 1.5))
+        sleep(uniform(1, 1.5))
         els = driver.get_elements((By.XPATH, ".//div[contains(@id, 'pr_id')]/div/table/tbody/tr"))
         parser.info_msg(f"page: {page}, els: {len(els)}")
         for el in els:

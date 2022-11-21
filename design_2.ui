@@ -1547,15 +1547,15 @@ padding: 0 5px;
 border: 1px solid;</string>
             </property>
             <property name="text">
-             <string>неактивен</string>
+             <string>ЖК &quot;Чайка&quot;</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="siteButton_23">
             <property name="styleSheet">
-             <string notr="true">color: rgb(255, 255, 255);
-background-color: rgb(122, 122, 122);</string>
+             <string notr="true">background-color: rgb(0, 0, 0);
+color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">
              <string>Вкл/Выкл</string>
@@ -1593,15 +1593,15 @@ padding: 0 5px;
 border: 1px solid;</string>
             </property>
             <property name="text">
-             <string>неактивен</string>
+             <string>ЖК &quot;Южный&quot;</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="siteButton_24">
             <property name="styleSheet">
-             <string notr="true">color: rgb(255, 255, 255);
-background-color: rgb(122, 122, 122);</string>
+             <string notr="true">background-color: rgb(0, 0, 0);
+color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">
              <string>Вкл/Выкл</string>

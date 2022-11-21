@@ -690,8 +690,8 @@ class Ui_MainWindow(object):
         self.label_23.setObjectName("label_23")
         self.horizontalLayout_32.addWidget(self.label_23)
         self.siteButton_23 = QtWidgets.QPushButton(self.centralwidget)
-        self.siteButton_23.setStyleSheet("color: rgb(255, 255, 255);\n"
-"background-color: rgb(122, 122, 122);")
+        self.siteButton_23.setStyleSheet("background-color: rgb(0, 0, 0);\n"
+"color: rgb(255, 255, 255);")
         self.siteButton_23.setObjectName("siteButton_23")
         self.horizontalLayout_32.addWidget(self.siteButton_23)
         self.verticalLayout_9.addLayout(self.horizontalLayout_32)
@@ -712,8 +712,8 @@ class Ui_MainWindow(object):
         self.label_24.setObjectName("label_24")
         self.horizontalLayout_33.addWidget(self.label_24)
         self.siteButton_24 = QtWidgets.QPushButton(self.centralwidget)
-        self.siteButton_24.setStyleSheet("color: rgb(255, 255, 255);\n"
-"background-color: rgb(122, 122, 122);")
+        self.siteButton_24.setStyleSheet("background-color: rgb(0, 0, 0);\n"
+"color: rgb(255, 255, 255);")
         self.siteButton_24.setObjectName("siteButton_24")
         self.horizontalLayout_33.addWidget(self.siteButton_24)
         self.verticalLayout_9.addLayout(self.horizontalLayout_33)
@@ -922,9 +922,9 @@ class Ui_MainWindow(object):
         self.siteButton_21.setText(_translate("MainWindow", "Вкл/Выкл"))
         self.label_22.setText(_translate("MainWindow", "ЖК \"Гармония\""))
         self.siteButton_22.setText(_translate("MainWindow", "Вкл/Выкл"))
-        self.label_23.setText(_translate("MainWindow", "неактивен"))
+        self.label_23.setText(_translate("MainWindow", "ЖК \"Чайка\""))
         self.siteButton_23.setText(_translate("MainWindow", "Вкл/Выкл"))
-        self.label_24.setText(_translate("MainWindow", "неактивен"))
+        self.label_24.setText(_translate("MainWindow", "ЖК \"Южный\""))
         self.siteButton_24.setText(_translate("MainWindow", "Вкл/Выкл"))
         self.label_25.setText(_translate("MainWindow", "неактивен"))
         self.siteButton_25.setText(_translate("MainWindow", "Вкл/Выкл"))

@@ -9,7 +9,6 @@ from MessagePack.message import err_log
 from WebDriverPack import WebDriver
 from WebDriverPack.webDriver import try_func, timer_func
 from g_gspread import update_sheet_data as gspread_update
-from bs4 import BeautifulSoup as Bs
 import numpy as np
 
 HEADLESS = True
@@ -18,9 +17,9 @@ SITE_URL = 'https://xn--80abdkakqodr2b6a9gsa.xn--p1ai/reservation/'
 SPREADSHEET_ID = '1Gl8EIYxxaeivCVHmGgD7EpIqUbHO2RlEHpQ5Ieem6js'  # заказчика
 SHEET_ID = 985137872  # заказчика
 SHEET_NAME = 'Лист2'  # заказчика
-# SPREADSHEET_ID = '1gx_dCPMI_2ygTqxcnMMY_MGnSEjcDerwaFOqPTYlbgI'  # мой
-# SHEET_ID = 1548802859  # мой
-# SHEET_NAME = 'Лист5'  # мой
+# SPREADSHEET_ID = '15jkM1TG1c3y4Wg-v8-wCRpYAod5zjxJUZUbyqsftlw4'  # мой
+# SHEET_ID = 0  # мой
+# SHEET_NAME = 'Лист1'  # мой
 HEADER = ['Дом', 'Этаж', 'Квартира', 'Тип', 'Площадь', 'Статус', 'Цена']
 
 data = []

@@ -16,7 +16,7 @@ from save_data import save_json, get_json_data_from_file
 from sites.brusnika_dom_ru import SiteParser as Parser_1
 from sites.jk_ajax_rf import SiteParser as Parser_2
 from sites.jk_vostochniy_rf import SiteParser as Parser_3
-from sites.jk_zelbulvar_rf import SiteParser as Parser_4
+from sites.jk_zelbulvar_rf2 import SiteParser as Parser_4
 from sites.eskadra_development_ru import SiteParser as Parser_5
 from sites.seasons_25_ru import SiteParser as Parser_6
 from sites.jk_juravli_rf import SiteParser as Parser_7
@@ -35,6 +35,8 @@ from sites.akvamarin import SiteParser as Parser_19
 from sites.pribrejniy_dom import SiteParser as Parser_20
 from sites.fiolent import SiteParser as Parser_21
 from sites.jk_garmonia import SiteParser as Parser_22
+from sites.jk_chayka import SiteParser as Parser_23
+from sites.jk_yujniy import SiteParser as Parser_24
 
 
 class QTTimer(QThread):
@@ -118,6 +120,8 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
             self.label_20.text(): Parser_20,
             self.label_21.text(): Parser_21,
             self.label_22.text(): Parser_22,
+            self.label_23.text(): Parser_23,
+            self.label_24.text(): Parser_24,
         }
 
         self._app_setup()
@@ -163,6 +167,8 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.siteButton_20.clicked.connect(self._site_click_20)
         self.siteButton_21.clicked.connect(self._site_click_21)
         self.siteButton_22.clicked.connect(self._site_click_22)
+        self.siteButton_23.clicked.connect(self._site_click_23)
+        self.siteButton_24.clicked.connect(self._site_click_24)
 
     @property
     def run(self):
@@ -423,6 +429,14 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
             'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
             if self.label_22.text() in self._sites else
             'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_23.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_23.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_24.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_24.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
 
     def _save_app_setup(self):
         data = {
@@ -671,4 +685,26 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.label_22.setStyleSheet(
             'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
             if self.label_22.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_23(self):
+        if self.label_23.text() in self._sites:
+            self._sites.remove(self.label_23.text())
+        else:
+            self._sites.append(self.label_23.text())
+        self._save_app_setup()
+        self.label_23.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_23.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_24(self):
+        if self.label_24.text() in self._sites:
+            self._sites.remove(self.label_24.text())
+        else:
+            self._sites.append(self.label_24.text())
+        self._save_app_setup()
+        self.label_24.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_24.text() in self._sites else
             'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')

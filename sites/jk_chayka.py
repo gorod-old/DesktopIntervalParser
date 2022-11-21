@@ -5,7 +5,9 @@ from PyQt5.QtCore import QThread
 from colorama import Fore, Style
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from MessagePack.message import err_log, print_exception_msg
+from selenium.webdriver.support.select import Select
+
+from MessagePack.message import err_log
 from WebDriverPack import WebDriver
 from WebDriverPack.webDriver import try_func, timer_func
 from g_gspread import update_sheet_data as gspread_update
@@ -13,15 +15,15 @@ from bs4 import BeautifulSoup as Bs
 import numpy as np
 
 HEADLESS = True
-SITE_NAME = 'ЖК "Эмеральд'
-SITE_URL = 'https://emeraldstroy.ru/'
-SPREADSHEET_ID = '1W-6ElXk5ZQQUlTI47zwoMLu6i3I_-k88s2WqWzNn0Uo'  # заказчика
+SITE_NAME = 'ЖК Чайка'
+SITE_URL = 'https://xn----7sbaj6agk3g.xn--p1ai/#/profitbase/projects/list?filter=property.status:AVAILABLE'
+SPREADSHEET_ID = '1bweZFNmPFukmJ13dulLClzx4z8emo2JMTI_AbzvZQ54'  # заказчика
 SHEET_ID = 0  # заказчика
 SHEET_NAME = 'Лист1'  # заказчика
-# SPREADSHEET_ID = '1k9lUVPvTc5y5cbHsLjs8gNO17Z4XnfWeK66Yhwc5QvY'  # мой
+# SPREADSHEET_ID = '1NnHaiVxvCsenOvPhopFbBdxWEoP5aeJIZkdzWR4Rtto'  # мой
 # SHEET_ID = 0  # мой
 # SHEET_NAME = 'Лист1'  # мой
-HEADER = ['Этаж', 'Квартира', 'Комнат', 'Площадь', 'Цена']
+HEADER = ['Дом', 'Этаж', '№ квартиры', 'Площадь', 'Цена', 'Статус']
 
 data = []
 
@@ -61,12 +63,12 @@ class SiteParser(QThread):
 
     def _create_driver(self):
         try:
-            self.driver = WebDriver(headless=HEADLESS, rem_warning=True)
-            self.driver.get_page(SITE_URL)
+            self.driver = WebDriver(headless=HEADLESS)
+            self.driver.get_page(SITE_URL, )
             for i in range(5):
-                els = self.driver.get_elements(
-                    (By.CSS_SELECTOR, '#app > section.first-screen.position-relative > div > div > div:nth-child(2) > '
-                                      'div > div.position-relative > img'))
+                sleep(3)
+                self.driver.waiting_for_element((By.XPATH, '//*[@id="profitbase_front_widget"]'), 20)
+                els = self.driver.get_elements((By.XPATH, '//*[@id="profitbase_front_widget"]'))
                 if not els or len(els) == 0:
                     sleep(uniform(1, 5))
                     self.driver.close()
@@ -96,73 +98,60 @@ class SiteParser(QThread):
 @timer_func
 @try_func
 def pars_data(parser):
-    print('check')
     data.clear()
     app = parser.app
     driver = parser.driver
-    # driver.driver.maximize_window()
-    els = driver.get_elements((By.CSS_SELECTOR, '#app > section.first-screen.position-relative > div > div > '
-                                                'div:nth-child(2) > div > div.position-relative > svg > polygon'))
-    parser.info_msg(f'Этажи: {len(els)}')
-    floor_urls = []
-    for el in els:
-        url = el.get_attribute('onclick')
-        url = 'https://' + url.split('https://')[1].split("'")[0].strip()
-        floor_urls.append(url)
-    driver_1 = WebDriver(headless=True)
-    for url in floor_urls:
+    driver.driver.maximize_window()
+    frame = driver.get_element((By.XPATH, '//*[@id="profitbase_front_widget"]'))
+    driver.driver.switch_to.frame(frame)
+    driver.waiting_for_element((By.XPATH, ".//p-paginator/div/button[contains(@class, 'p-paginator-next')]"), 20)
+    disabled, next_bt, page = False, None, 1
+    while not disabled:
         if not app.run:
             return None
-        driver.get_page(url)
-        sleep(1)
-        els_ = driver.get_elements(
-            (By.CSS_SELECTOR, '#app > div.floor > div > div.floor__plan > div.position-relative.w-fit.mx-auto > svg > '
-                              'polygon'))
-        parser.info_msg(f'Квартир: {len(els_)}')
-        flat_urls = []
-        for el in els_:
-            url = el.get_attribute('data-url')
-            url = 'https://' + url.split('https://')[1].split("'")[0].strip()
-            flat_urls.append(url)
-        for flat_url in flat_urls:
+        if next_bt:
+            next_bt.click()
+            sleep(1)
+        sleep(uniform(.5, 1.5))
+        els = driver.get_elements((By.XPATH, ".//div[contains(@id, 'pr_id')]/div/table/tbody/tr"))
+        parser.info_msg(f"page: {page}, els: {len(els)}")
+        for el in els:
             if not app.run:
                 return None
-            driver_1.get_page(flat_url)
-            floor_, flat_, type_, area_, price_ = '', '', '', '', ''
-            # Цена
-            try:
-                price_ = driver_1.get_element(
-                    (By.XPATH, '//*[@id="app"]/div[1]/div/div/div[2]/div[2]')).text.strip()
-            except Exception as e:
-                err_log(SITE_NAME + ' pars_data [price_]', str(e))
-            if 'руб' in price_:
-                # Этваж
+            type_ = el.find_element(By.XPATH, ".//td[9]").text.strip()
+            if type_.lower() == "квартира":
+                house_, floor_, flat_, area_, price_, status_ = "", "", "", "", "", ""
                 try:
-                    text = driver_1.get_element((By.XPATH, '//*[@id="app"]/div[1]/div/nav/ol/li[2]/a')).text.strip()
-                    floor_ = text.split('Этаж')[1].strip()
+                    house_ = el.find_element(By.XPATH, ".//td[3]").text.strip()
+                except Exception as e:
+                    err_log(SITE_NAME + ' pars_data [house_]', str(e))
+                try:
+                    floor_ = el.find_element(By.XPATH, ".//td[10]").text.strip()
                 except Exception as e:
                     err_log(SITE_NAME + ' pars_data [floor_]', str(e))
-                # Квартира
                 try:
-                    text = driver_1.get_element((By.XPATH, '//*[@id="app"]/div[1]/div/nav/ol/li[3]')).text.strip()
-                    flat_ = text.split('Квартира')[1].strip()
+                    flat_ = el.find_element(By.XPATH, ".//td[4]").text.strip()
                 except Exception as e:
                     err_log(SITE_NAME + ' pars_data [flat_]', str(e))
-                # Комнат
                 try:
-                    type_ = driver_1.get_element(
-                        (By.XPATH, '//*[@id="app"]/div[1]/div/div/div[2]/div[1]/div[3]/span[2]')).text.strip()
-                except Exception as e:
-                    err_log(SITE_NAME + ' pars_data [type_]', str(e))
-                # Площадь
-                try:
-                    area_ = driver_1.get_element(
-                        (By.XPATH, '//*[@id="app"]/div[1]/div/div/div[2]/div[1]/div[1]/span[2]')).text.strip()
+                    area_ = el.find_element(By.XPATH, ".//td[5]").text.strip()
                 except Exception as e:
                     err_log(SITE_NAME + ' pars_data [area_]', str(e))
-
-                row = [floor_, flat_, type_, area_, price_]
+                try:
+                    price_ = el.find_element(By.XPATH, ".//td[7]").text.strip()
+                except Exception as e:
+                    err_log(SITE_NAME + ' pars_data [price_]', str(e))
+                try:
+                    status_ = el.find_element(By.XPATH, ".//td[8]/div").text.strip()
+                except Exception as e:
+                    err_log(SITE_NAME + ' pars_data [status_]', str(e))
+                row = [house_, floor_, flat_, area_, price_, status_]
                 parser.add_row_info(row)
 
-    driver_1.close()
+        next_bt = driver.get_element((By.XPATH, ".//p-paginator/div/button[contains(@class, 'p-paginator-next')]"))
+        print(next_bt)
+        print(next_bt.get_attribute("class"))
+        disabled = "p-disabled" in next_bt.get_attribute("class")
+        page += 1
+
     return data

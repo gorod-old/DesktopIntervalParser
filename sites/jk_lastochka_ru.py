@@ -115,13 +115,13 @@ def pars_data(parser):
         sleep(2)
         els = driver.get_elements((By.CSS_SELECTOR, '#floor > div.ma-0 > div.container.flat-select.container--fluid > '
                                                     'div > div > div.v-responsive__content > svg > polygon.flat'))
-        parser.info_msg(f'Этаж: {floor}')
+        parser.info_msg(f'Этаж: {floor + 1}')
         parser.info_msg(f'Квартир: {len(els)}')
         for i in range(0, len(els), 1):
             action = webdriver.ActionChains(driver.driver)
             action.move_to_element(els[i]).click().perform()
             sleep(2)
-            row = [floor]
+            row = [floor + 1]
             flat, area, price = '', '', ''
             try:
                 text = driver.get_element((By.CSS_SELECTOR, '#flat > div.container.pa-5 > h1')).text
@@ -136,15 +136,16 @@ def pars_data(parser):
             except Exception as e:
                 err_log(SITE_NAME + ' get_flat_info [площадь]', str(e))
             try:
-                price = driver.get_element((By.CSS_SELECTOR, '#flat > div.container.pa-5 > '
-                                                             'div.row.pt-5.justify-center > div.col-md-4.col > '
-                                                             'div.v-list.v-sheet.theme--light.v-list--dense > '
-                                                             'div:nth-child(3) > '
-                                                             'div.v-list-item__content.font-weight-bold')).text.strip()
+                price = driver.get_element(
+                    (By.CSS_SELECTOR,
+                     '#flat > div.container.pa-5 > div.row.pt-5.justify-center > div.col-md-4.col > '
+                     'div.v-list.v-sheet.theme--light.v-list--dense > div:nth-child(3) > '
+                     'div.v-list-item__content.font-weight-bold')).text.strip()
+                price = price.split("\n")[0]
             except Exception as e:
                 err_log(SITE_NAME + ' get_flat_info [цена]', str(e))
             row.extend([flat, area, price])
-            parser.add_row_info(row, floor, flat)
+            parser.add_row_info(row, floor + 1, flat)
             driver.driver.back()
             sleep(1)
             els = driver.get_elements(

@@ -1640,15 +1640,15 @@ border: 1px solid;
 </string>
             </property>
             <property name="text">
-             <string>неактивен</string>
+             <string>ЖК Дом со львом</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="siteButton_25">
             <property name="styleSheet">
-             <string notr="true">color: rgb(255, 255, 255);
-background-color: rgb(122, 122, 122);</string>
+             <string notr="true">background-color: rgb(0, 0, 0);
+color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">
              <string>Вкл/Выкл</string>
@@ -1686,15 +1686,15 @@ padding: 0 5px;
 border: 1px solid;</string>
             </property>
             <property name="text">
-             <string>неактивен</string>
+             <string>ЖК Панорама</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="siteButton_26">
             <property name="styleSheet">
-             <string notr="true">color: rgb(255, 255, 255);
-background-color: rgb(122, 122, 122);</string>
+             <string notr="true">background-color: rgb(0, 0, 0);
+color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">
              <string>Вкл/Выкл</string>
@@ -1732,15 +1732,15 @@ padding: 0 5px;
 border: 1px solid;</string>
             </property>
             <property name="text">
-             <string>неактивен</string>
+             <string>Leo Development</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="siteButton_27">
             <property name="styleSheet">
-             <string notr="true">color: rgb(255, 255, 255);
-background-color: rgb(122, 122, 122);</string>
+             <string notr="true">background-color: rgb(0, 0, 0);
+color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">
              <string>Вкл/Выкл</string>
@@ -1778,15 +1778,15 @@ padding: 0 5px;
 border: 1px solid;</string>
             </property>
             <property name="text">
-             <string>неактивен</string>
+             <string>ЖК &quot;Сингапур&quot;</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="siteButton_28">
             <property name="styleSheet">
-             <string notr="true">color: rgb(255, 255, 255);
-background-color: rgb(122, 122, 122);</string>
+             <string notr="true">background-color: rgb(0, 0, 0);
+color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">
              <string>Вкл/Выкл</string>

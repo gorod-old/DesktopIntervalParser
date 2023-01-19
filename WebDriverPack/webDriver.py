@@ -9,6 +9,7 @@ from time import sleep, time
 
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver import DesiredCapabilities
 
 from MessagePack import print_exception_msg, print_info_msg
 from MessagePack.message import err_log
@@ -120,7 +121,8 @@ class WebDriver(Parser):
     def __init__(self, marker: str = None, user_agent: bool = True, proxy=False, proxy_api: list = None,
                  proxy_auth: bool = False, except_print: bool = False, delay_time: float = 3,
                  headless: bool = False, max_retry: int = 5, stream: int = None,
-                 window_width: int = 1920, window_height: int = 1080, rem_warning=False, full_screen=False):
+                 window_width: int = 1920, window_height: int = 1080, rem_warning=False, full_screen=False,
+                 wait_full_page_download=True):
         super(WebDriver, self).__init__()
         print(Fore.YELLOW + '[INFO]  marker:', Fore.MAGENTA + f'{marker}')
         self._proxy = proxy
@@ -132,7 +134,7 @@ class WebDriver(Parser):
         self._headless = headless
         self._max_retry = max_retry
         self._stream = stream
-        self._driver = self._get_driver(window_width, window_height, rem_warning, full_screen)
+        self._driver = self._get_driver(window_width, window_height, rem_warning, full_screen, wait_full_page_download)
 
     def __del__(self):
         try:
@@ -177,7 +179,7 @@ class WebDriver(Parser):
                 self._get_proxies()
         return proxy
 
-    def _get_driver(self, width, height, rem_warning, full_screen):
+    def _get_driver(self, width, height, rem_warning, full_screen, wait_full_page_download=True):
         if not os.path.exists('C:/Program Files/Google/Chrome/Application/chrome.exe'):
             sys.exit(
                 "[ERR] Please make sure Chrome browser is installed "
@@ -227,7 +229,12 @@ class WebDriver(Parser):
                     "download.directory_upgrade": True,
                     "safebrowsing.enabled": True
                 })
-                driver = webdriver.Chrome(service=service, options=options)
+                caps = DesiredCapabilities().CHROME
+                if wait_full_page_download:
+                    caps["pageLoadStrategy"] = "normal"  # Waits for full page load
+                else:
+                    caps["pageLoadStrategy"] = "none"  # Do not wait for full page load
+                driver = webdriver.Chrome(desired_capabilities=caps, service=service, options=options)
                 self.__delay(driver, self._delay_time)
                 return driver
             except Exception as e:

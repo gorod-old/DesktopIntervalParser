@@ -63,12 +63,12 @@ class SiteParser(QThread):
 
     def _create_driver(self):
         try:
-            self.driver = WebDriver(headless=HEADLESS)
+            self.driver = WebDriver(headless=HEADLESS, wait_full_page_download=False)
             self.driver.get_page(SITE_URL, )
             for i in range(5):
                 sleep(3)
-                self.driver.waiting_for_element((By.CSS_SELECTOR, '#top > a.btn.btn-lg.defaultBtn.selectApart'), 20)
-                els = self.driver.get_elements((By.CSS_SELECTOR, '#top > a.btn.btn-lg.defaultBtn.selectApart'))
+                self.driver.waiting_for_element((By.CSS_SELECTOR, '#visualSvg > g > path'), 20)
+                els = self.driver.get_elements((By.CSS_SELECTOR, '#visualSvg > g > path'))
                 if not els or len(els) == 0:
                     sleep(uniform(1, 5))
                     self.driver.close()
@@ -102,13 +102,26 @@ def pars_data(parser):
     app = parser.app
     driver = parser.driver
     driver.driver.maximize_window()
-    driver.waiting_for_element((By.CSS_SELECTOR, '#visualSvg > path'), 20)
-    els = driver.get_elements((By.CSS_SELECTOR, '#visualSvg > path'))
-    parser.info_msg(f"этажи: {len(els)}")
+    sleep(5)
+    driver.waiting_for_element((By.CSS_SELECTOR, '#visualSvg > g > path'), 20)
+    els = driver.get_elements((By.CSS_SELECTOR, '#visualSvg > g > path'))
+    parser.info_msg(f"дома: {len(els)}")
+    minus = len(els) - 1
+    modal = driver.get_element((By.CSS_SELECTOR, '#promoActionModal'))
+    print(modal)
+
+    if modal is not None:
+        print('check')
+        webdriver.ActionChains(driver.driver).move_to_element_with_offset(modal, 100, 100).click().perform()
+    webdriver.ActionChains(driver.driver).move_to_element(els[0]).pause(2).click(els[0]).perform()
+    sleep(3)
+    els = driver.get_elements((By.CSS_SELECTOR, '#visualSvg > g > path'))
+    flat_count = len(els) - minus
+    parser.info_msg(f"этажи: {flat_count}")
     if len(els) > 0:
         webdriver.ActionChains(driver.driver).move_to_element(els[0]).pause(2).click(els[0]).perform()
         sleep(3)
-        for i in range(24):
+        for i in range(flat_count):
             if not app.run:
                 return None
             els_ = []
@@ -162,9 +175,15 @@ def pars_data(parser):
                 pass
         close = driver.get_element((By.CSS_SELECTOR, "#loadFloorModal > div > div > div.modal-header > svg"))
         close.click()
-        webdriver.ActionChains(driver.driver).move_to_element(els[24]).pause(2).click(els[24]).perform()
+        webdriver.ActionChains(driver.driver).move_to_element(els[flat_count]).pause(2)\
+            .click(els[flat_count]).perform()
         sleep(3)
-        for i in range(22):
+        els = driver.get_elements((By.CSS_SELECTOR, '#visualSvg > g > path'))
+        flat_count = len(els) - minus
+        parser.info_msg(f"этажи: {flat_count}")
+        webdriver.ActionChains(driver.driver).move_to_element(els[0]).pause(2).click(els[0]).perform()
+        sleep(3)
+        for i in range(flat_count):
             if not app.run:
                 return None
             els_ = []

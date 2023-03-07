@@ -41,6 +41,8 @@ from sites.jk_dom_so_lvom import SiteParser as Parser_25
 from sites.jk_panorama import SiteParser as Parser_26
 from sites.leo_development_ru import SiteParser as Parser_27
 from sites.jk_singapur import SiteParser as Parser_28
+from sites.suprim_dom import SiteParser as Parser_29
+from sites.jk_legenda import SiteParser as Parser_30
 
 
 class QTTimer(QThread):
@@ -130,6 +132,8 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
             self.label_26.text(): Parser_26,
             self.label_27.text(): Parser_27,
             self.label_28.text(): Parser_28,
+            self.label_29.text(): Parser_29,
+            self.label_30.text(): Parser_30,
         }
 
         self._app_setup()
@@ -181,6 +185,8 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.siteButton_26.clicked.connect(self._site_click_26)
         self.siteButton_27.clicked.connect(self._site_click_27)
         self.siteButton_28.clicked.connect(self._site_click_28)
+        self.siteButton_29.clicked.connect(self._site_click_29)
+        self.siteButton_30.clicked.connect(self._site_click_30)
 
         self.statusBar().showMessage("📞telegram: @gorod_old    💰YooMoney(карта): 5599 0050 9705 4931")
 
@@ -466,6 +472,14 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.label_28.setStyleSheet(
             'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
             if self.label_28.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_29.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_29.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_30.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_30.text() in self._sites else
             'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
 
     def _save_app_setup(self):
@@ -781,4 +795,26 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.label_28.setStyleSheet(
             'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
             if self.label_28.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_29(self):
+        if self.label_29.text() in self._sites:
+            self._sites.remove(self.label_29.text())
+        else:
+            self._sites.append(self.label_29.text())
+        self._save_app_setup()
+        self.label_29.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_29.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_30(self):
+        if self.label_30.text() in self._sites:
+            self._sites.remove(self.label_30.text())
+        else:
+            self._sites.append(self.label_30.text())
+        self._save_app_setup()
+        self.label_30.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_30.text() in self._sites else
             'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')

@@ -14,14 +14,15 @@ import numpy as np
 
 HEADLESS = True
 SITE_NAME = 'ЖК "Домино'
-SITE_URL = 'https://xn----htbekhoifd.xn--p1ai/house'
+SITE_URL = 'https://xn----htbekhoifd.xn--p1ai/#/macrocatalog/houses/3305230/bigGrid?studio=null&floorNum=1&category' \
+           '=flat&activity=sell&presMode=complex '
 SPREADSHEET_ID = '1sUPVMLfCt5QuOzYa0tqS0e8gdYECU7Vs3UXH2dI5UGk'  # заказчика
 SHEET_ID = 0  # заказчика
 SHEET_NAME = 'Лист1'  # заказчика
 # SPREADSHEET_ID = '1XJVNmvn_c9k1kvQsU0rSCwrJc-C4Y5jwnof0oYm3hyQ'  # мой
 # SHEET_ID = 0  # мой
 # SHEET_NAME = 'Лист1'  # мой
-HEADER = ['Подъезд', 'Этаж', 'Квартира', 'Комнат', 'Площадь', 'Цена', 'Статус']
+HEADER = ['Подъезд', 'Этаж', 'Квартира', 'Комнат', 'Площадь', 'Цена']
 
 data = []
 
@@ -97,117 +98,51 @@ def pars_data(parser):
     data.clear()
     app = parser.app
     driver = parser.driver
-    # driver.driver.maximize_window()
-    entrances = 3
-    floors = 8
-    for i in range(1, entrances + 1, 1):  # start from 1
-        parser.info_msg(f'Подъезд: {i}')
-        for j in range(1, floors + 1, 1):  # start from 1
-            if not app.run:
-                return None
-            parser.info_msg(f'Этаж: {j}')
-            url = f'https://xn----htbekhoifd.xn--p1ai/apartments?entrance={i}&floor={j}'
-            driver.get_page(url)
-            try:
-                if i == 1:
-                    map_ = driver.get_element((By.XPATH, '/html/body/div[1]/main/div[1]/div/section/div[1]/div'))
-                    driver.driver.execute_script("arguments[0].scrollIntoView(false);", map_)
-                    sleep(3)
+    driver.driver.maximize_window()
+    driver.get_page(SITE_URL)
+    sleep(5)
 
-                    offset_x = 0
-                    offset_y = 0
+    entrances = driver.get_elements((By.CSS_SELECTOR, 'div.chess-floors-wrap'))
+    print('entrances:', len(entrances))
+    for i, ent in enumerate(entrances):
+        print('entrance:', i + 1)
+        floors = ent.find_elements(By.CSS_SELECTOR, 'div.chess-floor')
+        for j, floor in enumerate(reversed(floors)):
+            print('floor:', j + 1)
+            flats = floor.find_elements(By.CSS_SELECTOR, 'div.chess-item > div')
+            for flat in flats:
+                if not app.run:
+                    return None
+                color = flat.value_of_css_property('background-color')
+                if color == 'rgba(167, 239, 170, 1)':
+                    entrance_, floor_, flat_, type_, area_, price_ = i + 1, j + 1, '', '', '', ''
+                    # Квартира
+                    try:
+                        flat_ = flat.find_element(
+                            By.XPATH, './div/div[1]').text.strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [flat_]', str(e))
+                    # Комнат
+                    try:
+                        type_ = flat.find_element(
+                            By.XPATH, './div/div[2]').text.strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [type_]', str(e))
+                    # Площадь
+                    try:
+                        area_ = flat.find_element(
+                            By.XPATH, './div[3]/span[1]').text.strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [area_]', str(e))
+                    # Цена
+                    try:
+                        price_ = flat.find_element(
+                            By.XPATH, './div[2]').text.strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [price_]', str(e))
 
-                    action = webdriver.ActionChains(driver.driver)
-                    action.move_to_element_with_offset(map_, 200 + offset_x, 300 + offset_y).pause(1).perform()
-                    get_flat_info(parser, driver, i, j)
-                    action.move_by_offset(340, 0).pause(1).perform()
-                    get_flat_info(parser, driver, i, j)
-                    action.move_by_offset(50, 0).pause(1).perform()
-                    get_flat_info(parser, driver, i, j)
-                    action.move_by_offset(340, 0).pause(1).perform()
-                    get_flat_info(parser, driver, i, j)
-                elif i == 2:
-                    map_ = driver.get_element((By.XPATH, '/html/body/div[1]/main/div[1]/div/section/div[1]/div'))
-                    driver.driver.execute_script("arguments[0].scrollIntoView(false);", map_)
-                    sleep(3)
-
-                    offset_x = 20
-                    offset_y = 200
-
-                    action = webdriver.ActionChains(driver.driver)
-                    action.move_to_element_with_offset(map_, 200 + offset_x, 300 + offset_y).pause(1).perform()
-                    get_flat_info(parser, driver, i, j)
-                    action.move_by_offset(300, 0).pause(1).perform()
-                    get_flat_info(parser, driver, i, j)
-                    action.move_by_offset(50, 0).pause(1).perform()
-                    get_flat_info(parser, driver, i, j)
-                    action.move_by_offset(320, 0).pause(1).perform()
-                    get_flat_info(parser, driver, i, j)
-                elif i == 3:
-                    map_ = driver.get_element((By.XPATH, '/html/body/div[1]/main/div[1]/div/section/div[1]/div'))
-                    driver.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", map_)
-                    sleep(3)
-
-                    offset_x = 0
-                    offset_y = 0
-
-                    action = webdriver.ActionChains(driver.driver)
-                    action.move_to_element_with_offset(map_, 300 + offset_x, 300 + offset_y).pause(1).perform()
-                    get_flat_info(parser, driver, i, j)
-                    action.move_by_offset(0, 280).pause(1).perform()
-                    get_flat_info(parser, driver, i, j)
-                    action.move_by_offset(0, 70).pause(1).perform()
-                    get_flat_info(parser, driver, i, j)
-                    action.move_by_offset(0, 300).pause(1).perform()
-                    get_flat_info(parser, driver, i, j)
-            except Exception as e:
-                err_log(SITE_NAME + ' pars_data', str(e))
+                    row = [entrance_, floor_, flat_, type_, area_, price_]
+                    parser.add_row_info(row)
 
     return data
 
-
-def get_flat_info(parser, driver, d, f):
-    text = None
-    try:
-        text = driver.get_element(
-            (By.XPATH, '/html/body/div[1]/main/div[1]/div/section/div[1]/div/div')).text.strip()
-    except Exception as e:
-        # err_log(SITE_NAME + ' get_flat_info [text]', str(e))
-        pass
-    # print(text)
-    entrance_, floor_, flat_, type_, area_, price_, status_ = '', '', '', '', '', '', ''
-    entrance_ = d
-    floor_ = f
-    if text is None or text == '':
-        parser.info_msg('text not find!')
-        return
-    # Статус
-    try:
-        status_ = text.split('\n')[1].split('Комнат')[0].strip()
-    except Exception as e:
-        err_log(SITE_NAME + ' get_flat_info [status_]', str(e))
-    if 'Свободна' in status_:
-        # Квартира
-        try:
-            flat_ = text.split('Квартира')[1].split('\n')[0].strip()
-        except Exception as e:
-            err_log(SITE_NAME + ' get_flat_info [flat_]', str(e))
-        # Комнат
-        try:
-            type_ = text.split('Комнат:')[1].split('Площадь')[0].strip()
-        except Exception as e:
-            err_log(SITE_NAME + ' get_flat_info [type_]', str(e))
-        # Площадь
-        try:
-            area_ = text.split('Площадь:')[1].split('Цена')[0].strip()
-        except Exception as e:
-            err_log(SITE_NAME + ' get_flat_info [area_]', str(e))
-        # Цена
-        try:
-            if 'Цена:' in text:
-                price_ = text.split('Цена:')[1].split('₽')[0].strip() + ' ₽'
-        except Exception as e:
-            err_log(SITE_NAME + ' get_flat_info [price_]', str(e))
-
-        row = [entrance_, floor_, flat_, type_, area_, price_, status_]
-        parser.add_row_info(row)

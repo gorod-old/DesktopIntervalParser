@@ -108,7 +108,7 @@ def pars_data(parser):
     print(modal)
 
     if modal is not None:
-        print('check')
+        print('check modal')
         webdriver.ActionChains(driver.driver).move_to_element_with_offset(modal, 100, 100).click().perform()
     els = driver.get_elements((By.CSS_SELECTOR, '#visualSvg > g > path'))
     minus = 0

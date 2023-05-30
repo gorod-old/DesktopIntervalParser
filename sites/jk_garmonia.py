@@ -16,7 +16,7 @@ import numpy as np
 
 HEADLESS = True
 SITE_NAME = 'ЖК Гармония'
-SITE_URL = 'https://xn----8sbkg6adjts.xn--p1ai/jk-garmonia-3/#block1'
+SITE_URL = 'https://xn----8sbkg6adjts.xn--p1ai/projects/jk-garmony-dom1/plan_prices_dom1/'
 SPREADSHEET_ID = '1TMofHMKhxCknqLQusUpH1X4r9zuZlmmDUT5UUQQpjVs'  # заказчика
 SHEET_ID = 0  # заказчика
 SHEET_NAME = 'Лист1'  # заказчика
@@ -64,17 +64,17 @@ class SiteParser(QThread):
     def _create_driver(self):
         try:
             self.driver = WebDriver(headless=HEADLESS)
-            self.driver.get_page(SITE_URL)
-            for i in range(5):
-                els = self.driver.get_elements(
-                    (By.CSS_SELECTOR, '#image-map-pro-4500 > div > div.imp-ui > div > select'))
-                if not els or len(els) == 0:
-                    sleep(uniform(1, 5))
-                    self.driver.close()
-                    self.driver = WebDriver(headless=HEADLESS)
-                    self.driver.get_page(SITE_URL)
-                else:
-                    break
+            # self.driver.get_page(SITE_URL)
+            # for i in range(5):
+            #     els = self.driver.get_elements(
+            #         (By.CSS_SELECTOR, '#image-map-pro-4500 > div > div.imp-ui > div > select'))
+            #     if not els or len(els) == 0:
+            #         sleep(uniform(1, 5))
+            #         self.driver.close()
+            #         self.driver = WebDriver(headless=HEADLESS)
+            #         self.driver.get_page(SITE_URL)
+            #     else:
+            #         break
         except Exception as e:
             err_log(SITE_NAME + '_create_driver', str(e))
 
@@ -101,60 +101,80 @@ def pars_data(parser):
     app = parser.app
     driver = parser.driver
     driver.driver.maximize_window()
+    section_data = {
+        'Дом 1': ['https://xn----8sbkg6adjts.xn--p1ai/projects/jk-garmony-dom1/plan_prices_dom1/',
+                  '#image-map-pro-909 > div > div.imp-ui > div > select',
+                  'image-map-pro-909'],
+        'Дом 2': ['https://xn----8sbkg6adjts.xn--p1ai/projects/jk-garmony-dom2/plan_prices_dom2/',
+                  '#image-map-pro-8705 > div > div.imp-ui > div > select',
+                  'image-map-pro-8705'],
+        'Дом 3': ['https://xn----8sbkg6adjts.xn--p1ai/plan_prices/',
+                  '#image-map-pro-4500 > div > div.imp-ui > div > select',
+                  'image-map-pro-4500'],
+    }
 
-    select = Select(driver.get_element((By.CSS_SELECTOR, "#image-map-pro-4500 > div > div.imp-ui > div > select")))
+    for key, val in section_data.items():
+        url, selector, id_ = val[0], val[1], val[2]
+        driver.get_page(url)
+        driver.waiting_for_element((By.CSS_SELECTOR, selector), 10)
+        select = Select(driver.get_element((By.CSS_SELECTOR, selector)))
 
-    for index in reversed(range(0, len(select.options) - 1)):
-        parser.info_msg(select.options[index].text)
-        select.select_by_index(index)
-        driver.waiting_for_element((By.CSS_SELECTOR, "#image-map-pro-4500 > div > div.imp-ui > div > select"), 10)
-        select = Select(driver.get_element((By.CSS_SELECTOR, "#image-map-pro-4500 > div > div.imp-ui > div > select")))
-        sleep(1)
+        for index in reversed(range(0, len(select.options) - 1)):
+            parser.info_msg(select.options[index].text)
+            select.select_by_index(index)
+            driver.waiting_for_element((By.CSS_SELECTOR, selector), 10)
+            select = Select(driver.get_element((By.CSS_SELECTOR, selector)))
+            sleep(1)
 
-        # Квартиры
-        els = driver.get_elements(
-            (By.CSS_SELECTOR, "#image-map-pro-4500 > div > div.imp-zoom-outer-wrap > div > div > "
-                              "div.imp-shape-container > svg > polygon"))
-        parser.info_msg(f'Квартир: {len(els)}')
-        for el in els:
-            fill = el.value_of_css_property("fill")
-            if fill == 'rgba(0, 255, 0, 0.29)' or fill == 'rgba(208, 255, 208, 0.4)':
-                webdriver.ActionChains(driver.driver).move_to_element(el).click().perform()
-                sleep(1)
-                house_, floor_, flat_, area_, price_ = '3', '', '', '', ''
-                # Этаж, Квартира
-                try:
-                    text = driver.get_element(
-                        (By.CSS_SELECTOR, "body > div.imp-tooltips-container > div.imp-tooltip.imp-tooltip-visible > "
-                                          "div:nth-child(3) > div.squares-element.sq-col-lg-12 > h3")).text
-                    floor_ = text.split("-")[0].split(" ")[1].strip()
-                    flat_ = text.split("-")[1].strip()
-                except Exception as e:
-                    err_log(SITE_NAME + f' pars_data [floor_, flat_]', str(e))
-                # Площадь
-                try:
-                    el_ = driver.get_element(
-                        (By.CSS_SELECTOR, "body > div.imp-tooltips-container > div.imp-tooltip.imp-tooltip-visible > "
-                                          "div:nth-child(5) > div:nth-child(2) > h3"))
-                    if el_ is None:
-                        el_ = driver.get_element(
-                            (By.CSS_SELECTOR,
-                             "body > div.imp-tooltips-container > div.imp-tooltip.imp-tooltip-visible > "
-                             "div:nth-child(5) > div:nth-child(3) > h3"))
-                    text = el_.text
-                    area_ = text.split("-")[1].split("м")[0].strip() + "м²"
-                except Exception as e:
-                    err_log(SITE_NAME + f' pars_data [area_]', str(e))
-                # Цена
-                try:
-                    text = driver.get_element(
-                        (By.CSS_SELECTOR, "body > div.imp-tooltips-container > div.imp-tooltip.imp-tooltip-visible > "
-                                          "div:nth-child(6) > div.squares-element.sq-col-lg-12 > h3")).text
-                    price_ = text.split(":")[1].strip()
-                except Exception as e:
-                    err_log(SITE_NAME + f' pars_data [price_]', str(e))
-                row = [house_, floor_, flat_, area_, price_]
-                parser.add_row_info(row)
-                webdriver.ActionChains(driver.driver).move_by_offset(-500, 0).perform()
-
+            # Квартиры
+            els = driver.get_elements(
+                (By.CSS_SELECTOR, f"#{id_} > div > div.imp-zoom-outer-wrap > div > div > div.imp-shape-container > "
+                                  f"svg > polygon"))
+            parser.info_msg(f'Квартир: {len(els)}')
+            for el in els:
+                fill = el.value_of_css_property("fill")
+                # print('fill:', fill)
+                if fill == 'rgba(0, 255, 0, 0.4)' or fill == 'rgba(208, 255, 208, 0.4)' \
+                        or fill == 'rgba(0, 255, 0, 0.29)':
+                    webdriver.ActionChains(driver.driver).move_to_element(el).perform()
+                    webdriver.ActionChains(driver.driver).move_by_offset(-400, 0).click().perform()
+                    webdriver.ActionChains(driver.driver).move_to_element(el).click().perform()
+                    sleep(1)
+                    house_, floor_, flat_, area_, price_ = key, '', '', '', ''
+                    # Этаж, Квартира
+                    try:
+                        text = driver.get_element(
+                            (By.CSS_SELECTOR, "body > div.imp-tooltips-container > "
+                                              "div.imp-tooltip.imp-tooltip-visible > "
+                                              "div:nth-child(3) > div.squares-element.sq-col-lg-12 > h3")).text
+                        floor_ = text.split("-")[0].split(" ")[1].strip()
+                        flat_ = text.split("-")[1].strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + f' pars_data [floor_, flat_]', str(e))
+                    # Площадь
+                    try:
+                        if key == 'Дом 3':
+                            el_ = driver.get_element(
+                                (By.CSS_SELECTOR, "body > div:nth-child(1) > div.imp-tooltip.imp-tooltip-visible > "
+                                                  "div:nth-child(5) > div:nth-child(2) > h3"))
+                        else:
+                            el_ = driver.get_element(
+                                (By.CSS_SELECTOR, "body > div:nth-child(1) > div.imp-tooltip.imp-tooltip-visible > "
+                                                  "div:nth-child(5) > div:nth-child(1) > p"))
+                        text = el_.text
+                        area_ = text.split("-")[1].split("м")[0].strip() + "м²"
+                    except Exception as e:
+                        err_log(SITE_NAME + f' pars_data [area_]', str(e))
+                    # Цена
+                    try:
+                        text = driver.get_element(
+                            (By.CSS_SELECTOR, "body > div.imp-tooltips-container > "
+                                              "div.imp-tooltip.imp-tooltip-visible > "
+                                              "div:nth-child(6) > div.squares-element.sq-col-lg-12 > h3")).text
+                        price_ = text.split(":")[1].strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + f' pars_data [price_]', str(e))
+                    row = [house_, floor_, flat_, area_, price_]
+                    parser.add_row_info(row)
+                    # sleep(1)
     return data

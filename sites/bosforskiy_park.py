@@ -15,14 +15,14 @@ import numpy as np
 
 HEADLESS = True
 SITE_NAME = 'ЖК Босфорский парк'
-SITE_URL = 'https://old.pik.ru/search/vladivostok/bosforskiypark'
+SITE_URL = 'https://www.pik.ru/vladivostok'
 SPREADSHEET_ID = '1TfBj0p8pYFZc0RBaTbWz94xUIu8yQGNl2gGD5kY-s8M'  # заказчика
 SHEET_ID = 0  # заказчика
 SHEET_NAME = 'Лист1'  # заказчика
 # SPREADSHEET_ID = '1yBwm1qTuVjth5OoFKkK8U0FTmrKZ52ZHS1dsz3BuubA'  # мой
 # SHEET_ID = 0  # мой
 # SHEET_NAME = 'Лист1'  # мой
-HEADER = ['Корпус', 'Секция', 'Этаж', '№ на этаже', 'Тип', 'Площадь', 'Цена', 'Статус']
+HEADER = ['Комплекс', 'Блок', 'Этаж', '№ на этаже', 'Тип', 'Площадь', 'Цена']
 
 data = []
 
@@ -62,21 +62,21 @@ class SiteParser(QThread):
 
     def _create_driver(self):
         try:
-            self.driver = WebDriver(headless=HEADLESS)
+            self.driver = WebDriver(headless=HEADLESS, wait_full_page_download=False)
             self.driver.get_page(SITE_URL)
-            for i in range(5):
-                els = self.driver.get_elements((
-                    By.CSS_SELECTOR,
-                    '#AppWrapper > div > div > div > div.styles__Wrapper-sc-n9odu4-1.bnsRkD > '
-                    'div.styles__Results-sc-n9odu4-4.tpPsg > div > div.styles__Container-sc-1m93mro-1.jPNZOV > div > '
-                    'div > div > a'))
-                if not els or len(els) == 0:
-                    sleep(uniform(1, 5))
-                    self.driver.close()
-                    self.driver = WebDriver(headless=HEADLESS)
-                    self.driver.get_page(SITE_URL)
-                else:
-                    break
+            # for i in range(5):
+            #     els = self.driver.get_elements((
+            #         By.CSS_SELECTOR,
+            #         '#AppWrapper > div > div > div > div.styles__Wrapper-sc-n9odu4-1.bnsRkD > '
+            #         'div.styles__Results-sc-n9odu4-4.tpPsg > div > div.styles__Container-sc-1m93mro-1.jPNZOV > div > '
+            #         'div > div > a'))
+            #     if not els or len(els) == 0:
+            #         sleep(uniform(1, 5))
+            #         self.driver.close()
+            #         self.driver = WebDriver(headless=HEADLESS)
+            #         self.driver.get_page(SITE_URL)
+            #     else:
+            #         break
         except Exception as e:
             err_log(SITE_NAME + '_create_driver', str(e))
 
@@ -103,80 +103,198 @@ def pars_data(parser):
     app = parser.app
     driver = parser.driver
     driver.driver.maximize_window()
-    num = 0
-    els = []
+
     while True:
-        els = driver.get_elements((
-            By.CSS_SELECTOR,
-            '#AppWrapper > div > div > div > div.styles__Wrapper-sc-n9odu4-1.bnsRkD > '
-            'div.styles__Results-sc-n9odu4-4.tpPsg > div > div.styles__Container-sc-1m93mro-1.jPNZOV > div > div > '
-            'div > a'))
-        if num == len(els):
+        selector = '//*[@id="__next"]/div[5]/div/div/div[2]/div/div/div[contains(@class, ' \
+                   '"styles__ProjectsListItem-sc")]/a '
+        driver.waiting_for_element((By.XPATH, selector), 20)
+        links = driver.get_elements(
+            (By.XPATH, selector))
+        parser.info_msg(f'Комплексы: {len(links)}')
+        urls, names = [], []
+        for i, lnk in enumerate(links):
+            try:
+                href = lnk.get_attribute('href')
+                urls.append(href)
+                name = lnk.find_element(By.XPATH, './div[1]/div[1]/h2').text
+                names.append(name)
+            except Exception as e:
+                print('error')
+                pass
+        if len(urls) == len(links) and len(names) == len(links):
             break
-        num = len(els)
-        driver.driver.execute_script("return arguments[0].scrollIntoView(true);", els[-1])
+        else:
+            driver.driver.refresh()
+
+    parser.info_msg(f'Ссылки: {urls}')
+    parser.info_msg(f'Названия: {names}')
+
+    for i, url in enumerate(urls):
+        driver.get_page(url)
+        # selector = '#project_ChooseFlats'
+        # driver.waiting_for_element((By.CSS_SELECTOR, selector), 20)
+        # bt = driver.get_element((By.CSS_SELECTOR, selector))
+        # try:
+        #     bt.click()
+        # except Exception as e:
+        #     print('get flat bt click:', str(e))
+
+        while True:
+            selector = '#project_ChooseFlats'
+            driver.waiting_for_element((By.CSS_SELECTOR, selector), 10)
+            bt = driver.get_element((By.CSS_SELECTOR, selector))
+            try:
+                bt.click()
+                break
+            except Exception as e:
+                print('get flat bt click error')
+                driver.driver.refresh()
+
+        while True:
+            if not app.run:
+                return None
+            els = driver.get_elements((
+                By.CSS_SELECTOR, '#SearchList > div > div.sc-bTUVp.bPNryZ > div > a'))
+            driver.driver.execute_script("return arguments[0].scrollIntoView(true);", els[-1])
+            sleep(1)
+            try:
+                bt = driver.get_element(
+                    (By.CSS_SELECTOR,
+                     '#SearchList > div > div.styles__GridFull-pm6z18-0.cqnvus > div > div > button'))
+                bt.click()
+                sleep(5)
+            except Exception as e:
+                print('more bt click:', str(e))
+                break
+        parser.info_msg(f'Квартиры: {len(els)}')
+
+        driver_1 = WebDriver(headless=HEADLESS, wait_full_page_download=False)
         sleep(5)
+        for el in els:
+            if not app.run:
+                return None
+            park_, block_, floor_, flat_, type_, area_, price_ = '', '', '', '', '', '', ''
+            park_ = names[i]
+            # Комнат + площадь
+            try:
+                text = el.find_element(By.XPATH, './div[2]/div[1]/div[1]/div[1]').text
+                type_ = text.split(', ')[0].strip()
+                area_ = text.split(', ')[1].strip()
+            except Exception as e:
+                err_log(SITE_NAME + ' get_flat_info [тип, площадь]', str(e))
+            # Корпус + этаж
+            try:
+                text = el.find_element(By.XPATH, './div[2]/div[2]/div[3]/span[1]').text
+                block_ = text.split('Корпус')[1].split(',')[0].strip()
+                floor_ = text.split('Этаж')[1].strip()
+            except Exception as e:
+                err_log(SITE_NAME + ' get_flat_info [Корпус, этаж]', str(e))
+            # Цена
+            try:
+                text = el.find_element(By.XPATH, './div[2]/div[2]/div[1]/div[1]/div').text
+                price_ = text.strip()
+            except Exception as e:
+                err_log(SITE_NAME + ' get_flat_info [Цена]', str(e))
+            # № квартиры на этаже
+            bt_ = None
+            try:
+                url = el.get_attribute('href')
+                for j in range(5):
+                    driver_1.get_page(url)
+                    bt = (By.XPATH, '//*[@id="flat_read_more"]')
+                    driver_1.waiting_for_element(bt, 20)
+                    bt_ = driver_1.get_element(bt)
+                    if bt_ is not None:
+                        break
 
-    parser.info_msg(f'Квартиры: {len(els)}')
-    driver_1 = WebDriver(headless=HEADLESS, wait_full_page_download=False)
-    for el in els:
-        if not app.run:
-            return None
-        block_, section_, floor_, flat_, type_, area_, price_, status_ = '', '', '', '', '', '', '', ''
-        # Комнат + площадь
-        try:
-            text = el.find_element(By.XPATH, './div[2]/p').text
-            type_ = text.split(' ')[0].strip()
-            area_ = text.split(' ')[1].strip() + 'м²'
-        except Exception as e:
-            err_log(SITE_NAME + ' get_flat_info [тип, площадь]', str(e))
-        # Корпус + секция + этаж
-        try:
-            text = el.find_element(By.XPATH, './div[2]/div[1]/span').text
-            block_ = text.split('Корпус')[1].split('·')[0].strip()
-            section_ = text.split('секция')[1].split('·')[0].strip()
-            floor_ = text.split('этаж')[1].strip()
-        except Exception as e:
-            err_log(SITE_NAME + ' get_flat_info [Корпус, секция, этаж]', str(e))
-        # Цена
-        try:
-            text = el.find_element(By.XPATH, './div[3]/div/div[1]/div/div[1]/span').text
-            price_ = text.strip()
-        except Exception as e:
-            err_log(SITE_NAME + ' get_flat_info [Цена]', str(e))
-        # № квартиры на этаже
-        bt_ = None
-        try:
-            url = el.get_attribute('href')
-            for j in range(5):
-                driver_1.get_page(url)
-                bt = (By.XPATH, '//*[@id="InfoWrapper"]/div[1]/div/div/div/div/div[2]/div[1]/div/div[3]')
-                driver_1.waiting_for_element(bt, 20)
-                bt_ = driver_1.get_element(bt)
-                if bt_ is not None:
-                    break
+                # bt_.click()
+                webdriver.ActionChains(driver_1.driver).move_to_element(bt_).pause(1).click(bt_).perform()
+                sleep(2)
+                el = (By.XPATH, './/div[div[contains(text(), "Номер на этаже")]]/div[2]/div')
+                flat_ = driver_1.get_element(el).text.strip()
+            except Exception as e:
+                err_log(SITE_NAME + ' get_flat_info [№ на этаже]', str(e))
 
-            # bt_.click()
-            webdriver.ActionChains(driver_1.driver).move_to_element(bt_).pause(1).click(bt_).perform()
-            sleep(2)
-            el = (By.XPATH, './/div[div[contains(text(), "Номер на этаже")]]/div[2]/div')
-            flat_ = driver_1.get_element(el).text.strip()
-        except Exception as e:
-            err_log(SITE_NAME + ' get_flat_info [№ на этаже]', str(e))
-        try:
-            # text = driver_1.get_element(
-            #     (By.XPATH,
-            #      '//*[@id="InfoWrapper"]/div[1]/div/div/div/div[1]/div[3]/div/div/div[2]')).text.strip().lower()
-            text = driver_1.get_element(
-                (By.XPATH,
-                 '//*[@id="InfoWrapper"]/div[1]/div/div/div/div/div[1]/div[3]/div/div/div[2]')).text.strip().lower()
-            status_ = 'бронь' if 'забронирована' in text else ''
-        except Exception as e:
-            pass
-        row = [block_, section_, floor_, flat_, type_, area_, price_, status_]
-        parser.add_row_info(row)
-    driver_1.close()
+            row = [park_, block_, floor_, flat_, type_, area_, price_]
+            parser.add_row_info(row)
+        driver_1.close()
+
     return data
+
+    # num = 0
+    # els = []
+    # while True:
+    #     els = driver.get_elements((
+    #         By.CSS_SELECTOR,
+    #         '#AppWrapper > div > div > div > div.styles__Wrapper-sc-n9odu4-1.bnsRkD > '
+    #         'div.styles__Results-sc-n9odu4-4.tpPsg > div > div.styles__Container-sc-1m93mro-1.jPNZOV > div > div > '
+    #         'div > a'))
+    #     if num == len(els):
+    #         break
+    #     num = len(els)
+    #     driver.driver.execute_script("return arguments[0].scrollIntoView(true);", els[-1])
+    #     sleep(5)
+    #
+    # parser.info_msg(f'Квартиры: {len(els)}')
+    # driver_1 = WebDriver(headless=HEADLESS, wait_full_page_download=False)
+    # for el in els:
+    #     if not app.run:
+    #         return None
+    #     block_, section_, floor_, flat_, type_, area_, price_, status_ = '', '', '', '', '', '', '', ''
+    #     # Комнат + площадь
+    #     try:
+    #         text = el.find_element(By.XPATH, './div[2]/p').text
+    #         type_ = text.split(' ')[0].strip()
+    #         area_ = text.split(' ')[1].strip() + 'м²'
+    #     except Exception as e:
+    #         err_log(SITE_NAME + ' get_flat_info [тип, площадь]', str(e))
+    #     # Корпус + секция + этаж
+    #     try:
+    #         text = el.find_element(By.XPATH, './div[2]/div[1]/span').text
+    #         block_ = text.split('Корпус')[1].split('·')[0].strip()
+    #         section_ = text.split('секция')[1].split('·')[0].strip()
+    #         floor_ = text.split('этаж')[1].strip()
+    #     except Exception as e:
+    #         err_log(SITE_NAME + ' get_flat_info [Корпус, секция, этаж]', str(e))
+    #     # Цена
+    #     try:
+    #         text = el.find_element(By.XPATH, './div[3]/div/div[1]/div/div[1]/span').text
+    #         price_ = text.strip()
+    #     except Exception as e:
+    #         err_log(SITE_NAME + ' get_flat_info [Цена]', str(e))
+    #     # № квартиры на этаже
+    #     bt_ = None
+    #     try:
+    #         url = el.get_attribute('href')
+    #         for j in range(5):
+    #             driver_1.get_page(url)
+    #             bt = (By.XPATH, '//*[@id="InfoWrapper"]/div[1]/div/div/div/div/div[2]/div[1]/div/div[3]')
+    #             driver_1.waiting_for_element(bt, 20)
+    #             bt_ = driver_1.get_element(bt)
+    #             if bt_ is not None:
+    #                 break
+    #
+    #         # bt_.click()
+    #         webdriver.ActionChains(driver_1.driver).move_to_element(bt_).pause(1).click(bt_).perform()
+    #         sleep(2)
+    #         el = (By.XPATH, './/div[div[contains(text(), "Номер на этаже")]]/div[2]/div')
+    #         flat_ = driver_1.get_element(el).text.strip()
+    #     except Exception as e:
+    #         err_log(SITE_NAME + ' get_flat_info [№ на этаже]', str(e))
+    #     try:
+    #         # text = driver_1.get_element(
+    #         #     (By.XPATH,
+    #         #      '//*[@id="InfoWrapper"]/div[1]/div/div/div/div[1]/div[3]/div/div/div[2]')).text.strip().lower()
+    #         text = driver_1.get_element(
+    #             (By.XPATH,
+    #              '//*[@id="InfoWrapper"]/div[1]/div/div/div/div/div[1]/div[3]/div/div/div[2]')).text.strip().lower()
+    #         status_ = 'бронь' if 'забронирована' in text else ''
+    #     except Exception as e:
+    #         pass
+    #     row = [block_, section_, floor_, flat_, type_, area_, price_, status_]
+    #     parser.add_row_info(row)
+    # driver_1.close()
+    # return data
 
 # новая версия сайта >>>>>>>>>>>>>>>
 # from random import uniform

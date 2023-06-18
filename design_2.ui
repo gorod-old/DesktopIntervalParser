@@ -888,14 +888,14 @@ padding: 0 5px;
 border: 1px solid;</string>
             </property>
             <property name="text">
-             <string>ЖК &quot;&quot;</string>
+             <string>ЖК &quot;Исторический&quot;</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="siteButton_37">
             <property name="styleSheet">
-             <string notr="true">background-color: rgb(156, 156, 156);
+             <string notr="true">background-color: rgb(0, 0, 0);
 color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">

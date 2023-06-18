@@ -49,6 +49,7 @@ from sites.jk_med import SiteParser as Parser_33
 from sites.jk_fiord import SiteParser as Parser_34
 from sites.jk_inlove import SiteParser as Parser_35
 from sites.jk_voshod import SiteParser as Parser_36
+from sites.jk_istoricheskiy import SiteParser as Parser_37
 
 
 class QTTimer(QThread):
@@ -146,6 +147,7 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
             self.label_34.text(): Parser_34,
             self.label_35.text(): Parser_35,
             self.label_36.text(): Parser_36,
+            self.label_37.text(): Parser_37,
         }
 
         self._app_setup()
@@ -205,6 +207,7 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.siteButton_34.clicked.connect(self._site_click_34)
         self.siteButton_35.clicked.connect(self._site_click_35)
         self.siteButton_36.clicked.connect(self._site_click_36)
+        self.siteButton_37.clicked.connect(self._site_click_37)
 
         self.statusBar().showMessage("📞telegram: @gorod_old    💰YooMoney(карта): 5599 0050 9705 4931")
 
@@ -522,6 +525,10 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.label_36.setStyleSheet(
             'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
             if self.label_36.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+        self.label_37.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_37.text() in self._sites else
             'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
 
     def _save_app_setup(self):
@@ -925,4 +932,15 @@ class MainWindow(QMainWindow, design.Ui_MainWindow):
         self.label_36.setStyleSheet(
             'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
             if self.label_36.text() in self._sites else
+            'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')
+
+    def _site_click_37(self):
+        if self.label_37.text() in self._sites:
+            self._sites.remove(self.label_37.text())
+        else:
+            self._sites.append(self.label_37.text())
+        self._save_app_setup()
+        self.label_37.setStyleSheet(
+            'background-color: rgb(149, 255, 188); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;'
+            if self.label_37.text() in self._sites else
             'background-color: rgb(255, 164, 231); color: rgb(0, 0, 0); padding: 0 5px; border: 1px solid;')

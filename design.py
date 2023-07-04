@@ -613,7 +613,7 @@ class Ui_MainWindow(object):
         self.label_38.setObjectName("label_38")
         self.horizontalLayout_47.addWidget(self.label_38)
         self.siteButton_38 = QtWidgets.QPushButton(self.centralwidget)
-        self.siteButton_38.setStyleSheet("background-color: rgb(156, 156, 156);\n"
+        self.siteButton_38.setStyleSheet("background-color: rgb(0, 0, 0);\n"
 "color: rgb(255, 255, 255);")
         self.siteButton_38.setObjectName("siteButton_38")
         self.horizontalLayout_47.addWidget(self.siteButton_38)
@@ -1180,7 +1180,7 @@ class Ui_MainWindow(object):
         self.siteButton_30.setText(_translate("MainWindow", "Вкл/Выкл"))
         self.label_34.setText(_translate("MainWindow", "ЖК \"Фьорд\""))
         self.siteButton_34.setText(_translate("MainWindow", "Вкл/Выкл"))
-        self.label_38.setText(_translate("MainWindow", "ЖК \"\""))
+        self.label_38.setText(_translate("MainWindow", "ЖК \"Атлантикс Сити\""))
         self.siteButton_38.setText(_translate("MainWindow", "Вкл/Выкл"))
         self.label_15.setText(_translate("MainWindow", "ЖК \"Кленовый\""))
         self.siteButton_15.setText(_translate("MainWindow", "Вкл/Выкл"))

@@ -838,7 +838,7 @@ class Ui_MainWindow(object):
         self.label_39.setObjectName("label_39")
         self.horizontalLayout_46.addWidget(self.label_39)
         self.siteButton_39 = QtWidgets.QPushButton(self.centralwidget)
-        self.siteButton_39.setStyleSheet("background-color: rgb(156, 156, 156);\n"
+        self.siteButton_39.setStyleSheet("background-color: rgb(0, 0, 0);\n"
 "color: rgb(255, 255, 255);")
         self.siteButton_39.setObjectName("siteButton_39")
         self.horizontalLayout_46.addWidget(self.siteButton_39)
@@ -1200,7 +1200,7 @@ class Ui_MainWindow(object):
         self.siteButton_31.setText(_translate("MainWindow", "Вкл/Выкл"))
         self.label_35.setText(_translate("MainWindow", "ЖК \"Инлав-дом\""))
         self.siteButton_35.setText(_translate("MainWindow", "Вкл/Выкл"))
-        self.label_39.setText(_translate("MainWindow", "ЖК \"\""))
+        self.label_39.setText(_translate("MainWindow", "ЖК \"Еловый\""))
         self.siteButton_39.setText(_translate("MainWindow", "Вкл/Выкл"))
         self.label_22.setText(_translate("MainWindow", "ЖК \"Гармония\""))
         self.siteButton_22.setText(_translate("MainWindow", "Вкл/Выкл"))

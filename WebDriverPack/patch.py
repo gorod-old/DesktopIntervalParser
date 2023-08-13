@@ -68,7 +68,22 @@ def download_latest_chromedriver(current_chrome_version=''):
                 os.mkdir(driver_folder)
             chromedriver_path = os.path.normpath(os.path.join(driver_folder, 'chromedriver.exe'))
             file_path = os.path.normpath(os.path.join(driver_folder, file_name))
-            urllib.request.urlretrieve(driver_url, file_path)
+
+            # create .txt with download link
+            link_path = os.path.normpath(os.path.join(driver_folder, 'readme.txt'))
+            try:
+                os.remove(link_path)
+            except:
+                print("File Doesn't Exist in Specified Path")
+            try:
+                with open(link_path, 'x', encoding='utf-8') as f:
+                    f.write(f"Ссылка для скачивания драйвера (при включенном vpn, версия - {version}):\n"
+                            f"{driver_url} \nили: "
+                            f"https://chromedriver.chromium.org/downloads")
+            except FileNotFoundError:
+                print("The 'docs' directory does not exist")
+
+            urllib.request.urlretrieve(driver_url, link_path)
 
             # Unzip the file into folder
             with zipfile.ZipFile(file_path, 'r') as zip_ref:

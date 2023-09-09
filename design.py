@@ -1065,7 +1065,7 @@ class Ui_MainWindow(object):
         self.label_40.setObjectName("label_40")
         self.horizontalLayout_45.addWidget(self.label_40)
         self.siteButton_40 = QtWidgets.QPushButton(self.centralwidget)
-        self.siteButton_40.setStyleSheet("background-color: rgb(156, 156, 156);\n"
+        self.siteButton_40.setStyleSheet("background-color: rgb(0, 0, 0);\n"
 "color: rgb(255, 255, 255);")
         self.siteButton_40.setObjectName("siteButton_40")
         self.horizontalLayout_45.addWidget(self.siteButton_40)
@@ -1220,7 +1220,7 @@ class Ui_MainWindow(object):
         self.siteButton_32.setText(_translate("MainWindow", "Вкл/Выкл"))
         self.label_36.setText(_translate("MainWindow", "ЖК \"Восход\""))
         self.siteButton_36.setText(_translate("MainWindow", "Вкл/Выкл"))
-        self.label_40.setText(_translate("MainWindow", "ЖК \"\""))
+        self.label_40.setText(_translate("MainWindow", "ЖК \"Меридианы Улисса\""))
         self.siteButton_40.setText(_translate("MainWindow", "Вкл/Выкл"))
         self.comboLabel.setText(_translate("MainWindow", "Выбор интервала парсинга(в часах):"))
         self.startButton.setText(_translate("MainWindow", "СТАРТ"))

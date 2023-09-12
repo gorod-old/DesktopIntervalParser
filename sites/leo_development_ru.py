@@ -16,7 +16,7 @@ import numpy as np
 
 HEADLESS = True
 SITE_NAME = 'Leo Development'
-SITE_URL = 'https://leo-development.ru/catalog/1'
+SITE_URL = 'https://leo-development.ru/catalog/uliss'
 SPREADSHEET_ID = '1rbV9ZE5Gf2zdoDbji3WPbGMOBio_Ifp1lWAMBEsAVSg'  # заказчика
 SHEET_ID = 0  # заказчика
 SHEET_NAME = 'Лист1'  # заказчика
@@ -24,6 +24,8 @@ SHEET_NAME = 'Лист1'  # заказчика
 # SHEET_ID = 0  # мой
 # SHEET_NAME = 'Лист1'  # мой
 HEADER = ['Комплекс', '№ квартиры', 'Этаж', 'Площадь', 'Комнат', 'Цена']
+URLS = ['https://leo-development.ru/catalog/uliss', 'https://leo-development.ru/catalog/fiolent',
+        'https://leo-development.ru/catalog/dom_so_lvom']
 
 data = []
 
@@ -107,10 +109,10 @@ def pars_data(parser):
     driver = parser.driver
     driver.driver.maximize_window()
 
-    n = 1
+    n = 0
     els = driver.get_elements(
         (By.CSS_SELECTOR, '#main > section > div > div.catalog__list.catalog_list > div.catalog_list__wrapper > a'))
-    while n <= 10:
+    while True:
         if len(els) > 0:
             try:
                 complex_ = driver.get_element((By.XPATH, '//*[@id="main"]/section/div/div[1]/h1/span')).text.strip()\
@@ -128,12 +130,16 @@ def pars_data(parser):
                 for p in els_:
                     row.append(p.text.strip())
                 parser.add_row_info(row)
-        n += 1
-        url = f"https://leo-development.ru/catalog/{n}"
-        driver.get_page(url)
-        driver.waiting_for_element(
-            (By.CSS_SELECTOR,
-             '#main > section > div > div.catalog__list.catalog_list > div.catalog_list__wrapper > a'), 20)
-        els = driver.get_elements(
-            (By.CSS_SELECTOR, '#main > section > div > div.catalog__list.catalog_list > div.catalog_list__wrapper > a'))
+        if n < len(URLS) - 1:
+            n += 1
+            url = URLS[n]
+            driver.get_page(url)
+            driver.waiting_for_element(
+                (By.CSS_SELECTOR,
+                 '#main > section > div > div.catalog__list.catalog_list > div.catalog_list__wrapper > a'), 20)
+            els = driver.get_elements(
+                (By.CSS_SELECTOR, '#main > section > div > div.catalog__list.catalog_list > div.catalog_list__wrapper '
+                                  '> a'))
+        else:
+            break
     return data

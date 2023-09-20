@@ -1146,7 +1146,7 @@ class Ui_MainWindow(object):
         self.siteButton_1.setText(_translate("MainWindow", "Вкл/Выкл"))
         self.label_3.setText(_translate("MainWindow", "ЖК \"Восточный\""))
         self.siteButton_3.setText(_translate("MainWindow", "Вкл/Выкл"))
-        self.label_5.setText(_translate("MainWindow", "ЖК \"Эскадра\""))
+        self.label_5.setText(_translate("MainWindow", "ЖК \"Атмосфера\""))
         self.siteButton_5.setText(_translate("MainWindow", "Вкл/Выкл"))
         self.label_7.setText(_translate("MainWindow", "ЖК \"Журавли\""))
         self.siteButton_7.setText(_translate("MainWindow", "Вкл/Выкл"))

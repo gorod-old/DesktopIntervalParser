@@ -12,16 +12,16 @@ from g_gspread import update_sheet_data as gspread_update
 import numpy as np
 
 HEADLESS = True
-SITE_NAME = 'eskadra-development.ru'
-SITE_URL = 'https://eskadra-development.ru/live-property/choose/?f[perpage]=all&f[sort]=&f[sort_dst]=&f[price1]=0&f[' \
-           'price2]=11+778+679&f[sq1]=26&f[sq2]=157&f[floor1]=1&f[floor2]=23&f[smart_type]=1 '
+SITE_NAME = 'ЖК "Атмосфера"'
+SITE_URL = 'https://atmosferavl.ru/#visual'
+# SITE_URL = 'https://www.farpost.ru/vladivostok/realty/sell_flats/?constructionStatus[]=delivered&page=1'
 SPREADSHEET_ID = '128PrfeWxOpEvYmZ1imHkK6KOOTvfm3ggjbpxDduxs8s'  # заказчика
 SHEET_ID = 0  # заказчика
 SHEET_NAME = 'Лист1'  # заказчика
 # SPREADSHEET_ID = '1l69nz3ZnKccITNfC2dOQkr9uhUPZETBvIFPjNQHMyyo'  # мой
 # SHEET_ID = 0  # мой
 # SHEET_NAME = 'Лист1'  # мой
-HEADER = ['Объект', 'Квартира', 'Этаж', 'Площадь', 'Цена', 'Статус']
+HEADER = ['Объект', 'Квартира', 'Этаж', 'Площадь', 'Цена']
 
 data = []
 
@@ -61,17 +61,17 @@ class SiteParser(QThread):
 
     def _create_driver(self):
         try:
-            self.driver = WebDriver(headless=HEADLESS)
+            self.driver = WebDriver(headless=HEADLESS, wait_full_page_download=False, window_height=3000)
             self.driver.get_page(SITE_URL)
-            for i in range(5):
-                els = self.driver.get_elements((By.CSS_SELECTOR, '#flats_cont > div.flats.cleaner > div.item > a'))
-                if not els or len(els) == 0:
-                    sleep(uniform(1, 5))
-                    self.driver.close()
-                    self.driver = WebDriver(headless=HEADLESS)
-                    self.driver.get_page(SITE_URL)
-                else:
-                    break
+            # for i in range(5):
+            #     els = self.driver.get_elements((By.CSS_SELECTOR, '#flats_cont > div.flats.cleaner > div.item > a'))
+            #     if not els or len(els) == 0:
+            #         sleep(uniform(1, 5))
+            #         self.driver.close()
+            #         self.driver = WebDriver(headless=HEADLESS)
+            #         self.driver.get_page(SITE_URL)
+            #     else:
+            #         break
         except Exception as e:
             err_log(SITE_NAME + '_create_driver', str(e))
 
@@ -98,34 +98,106 @@ def pars_data(parser):
     app = parser.app
     driver = parser.driver
     driver.driver.maximize_window()
-    els = driver.get_elements((By.CSS_SELECTOR, '#flats_cont > div.flats.cleaner > div.item'))
-    parser.info_msg(f'Квартиры: {len(els)}')
-    for el in els:
+    sleep(10)
+    selector = "#visual > div.selectByParams > a"
+    driver.waiting_for_element((By.CSS_SELECTOR, selector), 30)
+    bt = driver.get_element((By.CSS_SELECTOR, selector))
+    bt.click()
+    sleep(5)
+    selector = "ul.aparts > li"
+    driver.waiting_for_element((By.CSS_SELECTOR, selector), 10)
+    els_ = driver.get_elements((By.CSS_SELECTOR, selector))
+    parser.info_msg(f'Квартиры: {len(els_)}')
+    for el in els_:
         if not app.run:
             return None
+        webdriver.ActionChains(driver.driver).move_to_element_with_offset(el, 50, 100).pause(1).perform()
         row = []
-        obj, flat, floor, square, price, status = '', '', '', '', '', ''
-        if 'цена:' in el.text.lower():
-            try:
-                text = el.text
-                flat = text.split('№')[0] + ' №' + text.split('№')[1].split('\n')[0]
-            except Exception as e:
-                err_log('pars_data [Квартира]', str(e))
-            try:
-                text = el.find_element(By.CSS_SELECTOR, 'span').text
-                obj = text.split('Площадь:')[0].strip()
-                square = text.split('Площадь:')[1].split('Этаж:')[0].strip()
-                floor = text.split('Этаж:')[1].split('Цена:')[0].strip()
-                price = text.split('Цена:')[1].strip()
-            except Exception as e:
-                err_log(SITE_NAME + ' pars_data [Объект, площадь, этаж, цена]', str(e))
-            try:
-                status = el.find_element(By.CSS_SELECTOR, 'div.booked')
-                if status:
-                    status = 'забронировано'
-            except Exception as e:
-                pass
-            row.extend([obj, flat, floor, square, price, status])
-            parser.add_row_info(row)
+        obj, flat, floor, square, price = '', '', '', '', ''
+        try:
+            obj = el.find_element(By.XPATH, './div/span[2]/span[1]').text.strip()
+        except Exception as e:
+            err_log(SITE_NAME + ' pars_data [obj]', str(e))
+        try:
+            flat = el.find_element(By.XPATH, './div/span[3]').text.strip()
+        except Exception as e:
+            err_log(SITE_NAME + ' pars_data [flat]', str(e))
+        try:
+            floor = el.find_element(By.XPATH, './div/span[2]/span[2]/span[2]').text.strip()
+        except Exception as e:
+            err_log(SITE_NAME + ' pars_data [floor]', str(e))
+        try:
+            square = el.find_element(By.XPATH, './div/span[1]/span[1]').text.strip()
+        except Exception as e:
+            err_log(SITE_NAME + ' pars_data [square]', str(e))
+        try:
+            price = el.find_element(By.XPATH, './div/span[4]').text.strip()
+        except Exception as e:
+            err_log(SITE_NAME + ' pars_data [price]', str(e))
+        row.extend([obj, flat, floor, square, price])
+        parser.add_row_info(row)
     return data
 
+    # selector_ = "#bulletins > div.pager.infinite > a"
+    # driver.waiting_for_element((By.CSS_SELECTOR, selector_), 10)
+    # next_bt = driver.get_element((By.CSS_SELECTOR, selector_))
+    # num = 0
+    # all_ = 0
+    # while next_bt:
+    #     selector = "#bulletins > div.viewport-padding-collapse > table"
+    #     driver.waiting_for_element((By.CSS_SELECTOR, selector), 10)
+    #     tables = driver.get_elements((By.CSS_SELECTOR, selector))
+    #     num_ = len(tables)
+    #     print(len(tables))
+    #     if num_ > num:
+    #         num += 1
+    #         selector = f"#bulletins > div.viewport-padding-collapse > table:nth-child({num + 1}) > tbody > tr"
+    #         driver.waiting_for_element((By.CSS_SELECTOR, selector), 10)
+    #         els_ = driver.get_elements((By.CSS_SELECTOR, selector))
+    #         all_ += len(els_) - 1
+    #         parser.info_msg(f'Квартиры: {len(els_) - 1}')
+    #         parser.info_msg(f'Всего: {all_}')
+    #         try:
+    #             price = els_[1].find_element(By.XPATH, './td/div/div/div[2]/div[1]/div/div[1]/div/span').text.strip()
+    #             print('price:', price)
+    #         except Exception as e:
+    #             pass
+    #     webdriver.ActionChains(driver.driver).move_to_element(next_bt).pause(1).perform()
+    #     recaptcha = None
+    #     try:
+    #         next_bt.click()
+    #         sleep(30)
+    #         recaptcha = driver.get_element((By.CSS_SELECTOR, '#recaptcha-accessible-status'))
+    #     except Exception as e:
+    #         pass
+    #     if recaptcha:
+    #         driver.driver.recaptcha_v2_solver()
+    #     driver.waiting_for_element((By.CSS_SELECTOR, selector_), 10)
+    #     next_bt = driver.get_element((By.CSS_SELECTOR, selector_))
+
+    # num = 0
+    # all_ = 0
+    # while True:
+    #     num += 1
+    #     driver.get_page(f"https://www.farpost.ru/vladivostok/realty/sell_flats/?constructionStatus[]=delivered&page={num}")
+    #     selector = f"#bulletins > div.viewport-padding-collapse > table > tbody > tr"
+    #     driver.waiting_for_element((By.CSS_SELECTOR, selector), 10)
+    #     els_ = driver.get_elements((By.CSS_SELECTOR, selector))
+    #     all_ += len(els_) - 1
+    #     parser.info_msg(f'Квартиры: {len(els_) - 1}')
+    #     parser.info_msg(f'Всего: {all_}')
+    #     for el in els_:
+    #         try:
+    #             price = el.find_element(By.CSS_SELECTOR, 'span.price-block__price').text.strip()
+    #             print('price:', price)
+    #         except Exception as e:
+    #             pass
+    #     next_bt = None
+    #     try:
+    #         selector_ = "#bulletins > div.pager.infinite > a"
+    #         driver.waiting_for_element((By.CSS_SELECTOR, selector_), 10)
+    #         next_bt = driver.get_element((By.CSS_SELECTOR, selector_))
+    #     except Exception as e:
+    #         pass
+    #     if next_bt is None:
+    #         break

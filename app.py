@@ -18,6 +18,7 @@ from sites.jk_ajax_rf import SiteParser as Parser_2
 from sites.jk_vostochniy_rf import SiteParser as Parser_3
 from sites.jk_zelbulvar_rf2 import SiteParser as Parser_4
 from sites.eskadra_development_ru import SiteParser as Parser_5
+# from sites.test import SiteParser as Parser_5
 from sites.seasons_25_ru2 import SiteParser as Parser_6
 from sites.jk_juravli_rf import SiteParser as Parser_7
 from sites.jk_zolotaya_dolina_rf import SiteParser as Parser_8
@@ -33,7 +34,8 @@ from sites.emerald import SiteParser as Parser_17
 from sites.domino import SiteParser as Parser_18
 from sites.akvamarin import SiteParser as Parser_19
 from sites.pribrejniy_dom import SiteParser as Parser_20
-from sites.fiolent import SiteParser as Parser_21
+# from sites.fiolent import SiteParser as Parser_21
+from sites.samolet import SiteParser as Parser_21
 from sites.jk_garmonia import SiteParser as Parser_22
 from sites.jk_chayka import SiteParser as Parser_23
 from sites.jk_yujniy import SiteParser as Parser_24

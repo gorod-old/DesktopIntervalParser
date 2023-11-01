@@ -95,7 +95,7 @@ class SiteParser(QThread):
 
 
 @timer_func
-@try_func
+# @try_func
 def pars_data(parser):
     data.clear()
     app = parser.app
@@ -116,65 +116,87 @@ def pars_data(parser):
     for key, val in section_data.items():
         url, selector, id_ = val[0], val[1], val[2]
         driver.get_page(url)
+        sleep(3)
         driver.waiting_for_element((By.CSS_SELECTOR, selector), 10)
         select = Select(driver.get_element((By.CSS_SELECTOR, selector)))
 
-        for index in reversed(range(0, len(select.options) - 1)):
-            parser.info_msg(select.options[index].text)
-            select.select_by_index(index)
-            driver.waiting_for_element((By.CSS_SELECTOR, selector), 10)
-            select = Select(driver.get_element((By.CSS_SELECTOR, selector)))
-            sleep(1)
+        # filter_ = ['Дом 1', 'Дом 2']
+        filter_ = []
 
-            # Квартиры
-            els = driver.get_elements(
-                (By.CSS_SELECTOR, f"#{id_} > div > div.imp-zoom-outer-wrap > div > div > div.imp-shape-container > "
-                                  f"svg > polygon"))
-            parser.info_msg(f'Квартир: {len(els)}')
-            for el in els:
-                fill = el.value_of_css_property("fill")
-                # print('fill:', fill)
-                if fill == 'rgba(0, 255, 0, 0.4)' or fill == 'rgba(208, 255, 208, 0.4)' \
-                        or fill == 'rgba(0, 255, 0, 0.29)':
-                    webdriver.ActionChains(driver.driver).move_to_element(el).perform()
-                    webdriver.ActionChains(driver.driver).move_by_offset(-400, 0).click().perform()
-                    webdriver.ActionChains(driver.driver).move_to_element(el).click().perform()
-                    sleep(1)
-                    house_, floor_, flat_, area_, price_ = key, '', '', '', ''
-                    # Этаж, Квартира
+        if key not in filter_:
+            for index in reversed(range(0, len(select.options) - 1)):
+                try:
+                    parser.info_msg(select.options[index].text)
+                except Exception as e:
+                    print(e)
+                try:
+                    select.select_by_index(index)
+                    driver.waiting_for_element((By.CSS_SELECTOR, selector), 10)
+                    select = Select(driver.get_element((By.CSS_SELECTOR, selector)))
+                    sleep(2)
+                    print('select:', select)
+                except Exception as e:
+                    print(e)
+
+                # Квартиры
+                els = []
+                try:
+                    flat_sel = f"#{id_} > div > div.imp-zoom-outer-wrap > div > div > div.imp-shape-container > svg > " \
+                               f"polygon "
+                    driver.waiting_for_element((By.CSS_SELECTOR, flat_sel), 10)
+                    els = driver.get_elements(
+                        (By.CSS_SELECTOR, flat_sel))
+                except Exception as e:
+                    print(e)
+                parser.info_msg(f'Квартир: {len(els)}')
+                for el in els:
+                    fill = ''
                     try:
-                        text = driver.get_element(
-                            (By.CSS_SELECTOR, "body > div.imp-tooltips-container > "
-                                              "div.imp-tooltip.imp-tooltip-visible > "
-                                              "div:nth-child(3) > div.squares-element.sq-col-lg-12 > h3")).text
-                        floor_ = text.split("-")[0].split(" ")[1].strip()
-                        flat_ = text.split("-")[1].strip()
+                        fill = el.value_of_css_property("fill")
                     except Exception as e:
-                        err_log(SITE_NAME + f' pars_data [floor_, flat_]', str(e))
-                    # Площадь
-                    try:
-                        if key == 'Дом 3':
-                            el_ = driver.get_element(
-                                (By.CSS_SELECTOR, "body > div:nth-child(1) > div.imp-tooltip.imp-tooltip-visible > "
-                                                  "div:nth-child(5) > div:nth-child(2) > h3"))
-                        else:
-                            el_ = driver.get_element(
-                                (By.CSS_SELECTOR, "body > div:nth-child(1) > div.imp-tooltip.imp-tooltip-visible > "
-                                                  "div:nth-child(5) > div:nth-child(1) > p"))
-                        text = el_.text
-                        area_ = text.split("-")[1].split("м")[0].strip() + "м²"
-                    except Exception as e:
-                        err_log(SITE_NAME + f' pars_data [area_]', str(e))
-                    # Цена
-                    try:
-                        text = driver.get_element(
-                            (By.CSS_SELECTOR, "body > div.imp-tooltips-container > "
-                                              "div.imp-tooltip.imp-tooltip-visible > "
-                                              "div:nth-child(6) > div.squares-element.sq-col-lg-12 > h3")).text
-                        price_ = text.split(":")[1].strip()
-                    except Exception as e:
-                        err_log(SITE_NAME + f' pars_data [price_]', str(e))
-                    row = [house_, floor_, flat_, area_, price_]
-                    parser.add_row_info(row)
-                    # sleep(1)
+                        print(e)
+                    # print('fill:', fill)
+                    if fill == 'rgba(0, 255, 0, 0.4)' or fill == 'rgba(208, 255, 208, 0.4)' \
+                            or fill == 'rgba(0, 255, 0, 0.29)':
+                        webdriver.ActionChains(driver.driver).move_to_element(el).perform()
+                        webdriver.ActionChains(driver.driver).move_by_offset(-400, 0).click().perform()
+                        webdriver.ActionChains(driver.driver).move_to_element(el).click().perform()
+                        sleep(1)
+                        house_, floor_, flat_, area_, price_ = key, '', '', '', ''
+                        # Этаж, Квартира
+                        try:
+                            text = driver.get_element(
+                                (By.CSS_SELECTOR, "body > div.imp-tooltips-container > "
+                                                  "div.imp-tooltip.imp-tooltip-visible > "
+                                                  "div:nth-child(3) > div.squares-element.sq-col-lg-12 > h3")).text
+                            floor_ = text.split("-")[0].split(" ")[1].strip()
+                            flat_ = text.split("-")[1].strip()
+                        except Exception as e:
+                            err_log(SITE_NAME + f' pars_data [floor_, flat_]', str(e))
+                        # Площадь
+                        try:
+                            if key == 'Дом 3':
+                                el_ = driver.get_element(
+                                    (By.CSS_SELECTOR, "body > div:nth-child(1) > div.imp-tooltip.imp-tooltip-visible > "
+                                                      "div:nth-child(5) > div:nth-child(2) > h3"))
+                            else:
+                                el_ = driver.get_element(
+                                    (By.CSS_SELECTOR, "body > div:nth-child(1) > div.imp-tooltip.imp-tooltip-visible > "
+                                                      "div:nth-child(5) > div:nth-child(1) > p"))
+                            text = el_.text
+                            area_ = text.split("-")[1].split("м")[0].strip() + "м²"
+                        except Exception as e:
+                            err_log(SITE_NAME + f' pars_data [area_]', str(e))
+                        # Цена
+                        try:
+                            text = driver.get_element(
+                                (By.CSS_SELECTOR, "body > div.imp-tooltips-container > "
+                                                  "div.imp-tooltip.imp-tooltip-visible > "
+                                                  "div:nth-child(6) > div.squares-element.sq-col-lg-12 > h3")).text
+                            price_ = text.split(":")[1].strip()
+                        except Exception as e:
+                            err_log(SITE_NAME + f' pars_data [price_]', str(e))
+                        row = [house_, floor_, flat_, area_, price_]
+                        parser.add_row_info(row)
+                        # sleep(1)
     return data

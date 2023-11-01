@@ -6,21 +6,23 @@ from colorama import Fore, Style
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from MessagePack.message import err_log
+from ServiceApiPack import get_proxy6_list
 from WebDriverPack import WebDriver
 from WebDriverPack.webDriver import try_func, timer_func
 from g_gspread import update_sheet_data as gspread_update
 import numpy as np
+from datetime import datetime, timedelta
 
 HEADLESS = False
-SITE_NAME = 'ЖК "Атмосфера"'
+SITE_NAME = 'FarPost.ru'
 SITE_URL = 'https://www.farpost.ru/vladivostok/realty/sell_flats/?constructionStatus[]=delivered&page=1'
-SPREADSHEET_ID = '128PrfeWxOpEvYmZ1imHkK6KOOTvfm3ggjbpxDduxs8s'  # заказчика
-SHEET_ID = 0  # заказчика
-SHEET_NAME = 'Лист1'  # заказчика
-# SPREADSHEET_ID = '1l69nz3ZnKccITNfC2dOQkr9uhUPZETBvIFPjNQHMyyo'  # мой
-# SHEET_ID = 0  # мой
-# SHEET_NAME = 'Лист1'  # мой
-HEADER = ['Объект', 'Квартира', 'Этаж', 'Площадь', 'Цена']
+# SPREADSHEET_ID = '1Bxm3997LfynLWLNpWDOsvp0LRhKg1uE_iPPSQ_aZ9Ps'  # заказчика
+# SHEET_ID = 0  # заказчика
+# SHEET_NAME = 'Лист1'  # заказчика
+SPREADSHEET_ID = '1Bxm3997LfynLWLNpWDOsvp0LRhKg1uE_iPPSQ_aZ9Ps'  # мой
+SHEET_ID = 0  # мой
+SHEET_NAME = 'Лист1'  # мой
+HEADER = ['Дата', 'Тип квартиры', 'Адрес', 'Район', 'Кто', 'Площадь', 'Цена', 'Ссылка']
 
 data = []
 
@@ -60,7 +62,8 @@ class SiteParser(QThread):
 
     def _create_driver(self):
         try:
-            self.driver = WebDriver(headless=HEADLESS, wait_full_page_download=False, window_height=3000)
+            self.driver = WebDriver(headless=HEADLESS, wait_full_page_download=False, window_height=3000,
+                                    proxy_api=[get_proxy6_list], proxy=True, proxy_auth=True)
             self.driver.get_page(SITE_URL)
             # for i in range(5):
             #     els = self.driver.get_elements((By.CSS_SELECTOR, '#flats_cont > div.flats.cleaner > div.item > a'))
@@ -103,19 +106,88 @@ def pars_data(parser):
     all_ = 0
     while True:
         num += 1
-        driver.get_page(f"https://www.farpost.ru/vladivostok/realty/sell_flats/?constructionStatus[]=delivered&page={num}")
+        url = f"https://www.farpost.ru/vladivostok/realty/sell_flats/?constructionStatus[]=delivered&page={num}"
+        driver.get_page(url)
         selector = f"#bulletins > div.viewport-padding-collapse > table > tbody > tr"
         driver.waiting_for_element((By.CSS_SELECTOR, selector), 10)
         els_ = driver.get_elements((By.CSS_SELECTOR, selector))
-        all_ += len(els_) - 1
-        parser.info_msg(f'Квартиры: {len(els_) - 1}')
+        if len(els_) > 0:
+            els_ = els_[1:]
+        all_ += len(els_)
+        parser.info_msg(f'Квартиры: {len(els_)}')
         parser.info_msg(f'Всего: {all_}')
         for el in els_:
             try:
-                price = el.find_element(By.CSS_SELECTOR, 'span.price-block__price').text.strip()
-                print('price:', price)
+                webdriver.ActionChains(driver.driver).move_to_element(el).pause(2).click(el).perform()
+                delay = uniform(1, 3)
+                sleep(delay)
+                row = []
+                date_, type_, address_, district_, owner_, square_, price_, link_ = '', '', '', '', '', '', '', ''
+                try:
+                    date_ = driver.get_element((By.XPATH, '//*[@id="bulletin"]/div/header/div/div')).text.strip()
+                    if "сегодня" in date_:
+                        date_ = datetime.now().strftime('%d.%m.%Y')
+                    elif "вчера" in date_:
+                        date_ = (datetime.now() - timedelta(days=1)).strftime('%d.%m.%Y')
+                except Exception as e:
+                    err_log(SITE_NAME + ' pars_data [date]', str(e))
+                    try:
+                        recap = driver.get_element(
+                            (By.CSS_SELECTOR,
+                             "#content h2")).text.strip()
+                        print('recaptha:', recap)
+                    except Exception as e:
+                        recap = ''
+                    if 'Вы не робот?' in recap:
+                        num -= 1
+                        all_ -= len(els_)
+                        proxy = driver.driver.current_proxy
+                        print('current proxy:', proxy)
+                        driver.close()
+                        driver = WebDriver(headless=HEADLESS, wait_full_page_download=False, window_height=3000,
+                                           proxy_api=[get_proxy6_list], proxy=True, proxy_auth=True)
+                        driver.get_page(url)
+                        driver.driver.maximize_window()
+                        sleep(10)
+                        break
+                try:
+                    type_ = driver.get_element(
+                        (By.XPATH, '//div[../div[contains(text(), "Вид квартиры")]]/span')).text.strip()
+                except Exception as e:
+                    err_log(SITE_NAME + ' pars_data [type]', str(e))
+                try:
+                    address_ = driver.get_element(
+                        (By.XPATH, '//div[../div[contains(text(), "Адрес")]]/span/a')).text.strip()
+                except Exception as e:
+                    err_log(SITE_NAME + ' pars_data [address]', str(e))
+                try:
+                    district_ = driver.get_element(
+                        (By.XPATH, '//div[../div[contains(text(), "Район")]]/span/a')).text.strip()
+                except Exception as e:
+                    err_log(SITE_NAME + ' pars_data [district]', str(e))
+                try:
+                    owner_ = driver.get_element(
+                        (By.XPATH, '//*[@id="fieldsetView"]/div/div[1]/div[1]/div/div[3]/span')).text.strip()
+                except Exception as e:
+                    err_log(SITE_NAME + ' pars_data [owner]', str(e))
+                try:
+                    square_ = driver.get_element(
+                        (By.XPATH, '//div[../div[contains(text(), "Площадь по документам")]]/span')).text.strip()
+                except Exception as e:
+                    err_log(SITE_NAME + ' pars_data [square]', str(e))
+                try:
+                    price_ = driver.get_element(
+                        (By.CSS_SELECTOR, 'span.viewbull-summary-price__value')).text.strip()
+                except Exception as e:
+                    err_log(SITE_NAME + ' pars_data [price]', str(e))
+                link_ = driver.driver.current_url
+                row.extend([date_, type_, address_, district_, owner_, square_, price_, link_])
+                parser.add_row_info(row)
+                driver.driver.back()
+                sleep(3)
             except Exception as e:
                 pass
+        parser.info_msg(f'Data: {len(data)}')
         next_bt = None
         try:
             selector_ = "#bulletins > div.pager.infinite > a"
@@ -125,3 +197,4 @@ def pars_data(parser):
             pass
         if next_bt is None:
             break
+    return data

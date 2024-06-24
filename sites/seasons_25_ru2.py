@@ -14,7 +14,7 @@ import numpy as np
 
 HEADLESS = True
 SITE_NAME = 'Времена года'
-SITE_URL = 'http://seasons25.ru'
+SITE_URL = 'https://seasons25.ru/buy'
 SPREADSHEET_ID = '1NCoiDqAW4SrNB1OsnLg8nTqGqFjKO9NUTUeOrRRKhTU'  # заказчика
 SHEET_ID = 0  # заказчика
 SHEET_NAME = 'Лист1'  # заказчика
@@ -98,95 +98,70 @@ def pars_data(parser):
     app = parser.app
     driver = parser.driver
     driver.driver.maximize_window()
-    selector = '#n2-ss-4 > div > div.n2-ss-slider-2.n2-ow > div > ' \
-               'div.n2-ss-slide.n2-ss-canvas.n2-ow.n2-ss-slide-49.n2-ss-slide-active > div > div > div > ' \
-               'div:nth-child(3) > div > div > div > div > div > div > a '
+    selector = 'div.window svg rect'
     driver.waiting_for_element((By.CSS_SELECTOR, selector), 30)
-    bt = driver.get_element((By.CSS_SELECTOR, selector))
+    floors = driver.get_elements((By.CSS_SELECTOR, selector))
+    print(f"этажи: {len(floors)}")
     sleep(5)
-    bt.click()
-    sleep(5)
-    driver.waiting_for_element((By.CSS_SELECTOR, '#target-frame-d8wa8gfa9f'), 20)
-    iframe = driver.get_element((By.CSS_SELECTOR, '#target-frame-d8wa8gfa9f'))
-    driver.driver.switch_to.frame(iframe)
-    selector = 'body > div > section > div.sw-flex > div.sw-left.g-left.global-left-color > ' \
-               'div.std-menu.custom-scrollbar.ng-scope > div.std-menu-type.global-left-color.--chess.ng-scope > a '
-    driver.waiting_for_element((By.CSS_SELECTOR, selector), 30)
-    bt = driver.get_element((By.CSS_SELECTOR, selector))
-    bt.click()
-    sleep(5)
-    selector = '#chess-sph-table > div > div.spht-floors2 > div > div > div.spht-flat2.ng-scope.cell-free'
-    els = driver.get_elements((By.CSS_SELECTOR, selector))
-    parser.info_msg(f'Квартиры: {len(els)}')
-    rng = len(els)
-    for i in range(0, rng, 1):
+    for i in range(len(floors)):
         if not app.run:
             return None
-        try:
-            webdriver.ActionChains(driver.driver).move_to_element(els[i]).click().perform()
-            sleep(3)
-            section_, floor_, flat_, type_, area_, price_ = '', '', '', '', '', ''
-            try:
-                section_ = driver.get_element(
-                    (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > section "
-                                      "> div > div > div > div.flat-panel-data-container.ng-scope.ng-isolate-scope > "
-                                      "div > div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(6) "
-                                      "> div.sphsi-param-value > span")).text.strip()
-            except Exception as e:
-                err_log(SITE_NAME + ' pars_data [section_]', str(e))
-            try:
-                floor_ = driver.get_element(
-                    (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > section "
-                                      "> div > div > div > div.flat-panel-data-container.ng-scope.ng-isolate-scope > "
-                                      "div > div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(5) "
-                                      "> div.sphsi-param-value > span")).text.strip()
-            except Exception as e:
-                err_log(SITE_NAME + ' pars_data [floor_]', str(e))
-            try:
-                flat_ = driver.get_element(
-                    (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > section "
-                                      "> div > div > div > div.flat-panel-data-container.ng-scope.ng-isolate-scope > "
-                                      "div > div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(4) "
-                                      "> div.sphsi-param-value > span")).text.strip()
-            except Exception as e:
-                err_log(SITE_NAME + ' pars_data [flat_]', str(e))
-            try:
-                type_ = driver.get_element(
-                    (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > section "
-                                      "> div > div > div > div.flat-panel-data-container.ng-scope.ng-isolate-scope > "
-                                      "div > div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(2) "
-                                      "> div.sphsi-param-value.ng-scope > span")).text.strip()
-            except Exception as e:
-                err_log(SITE_NAME + ' pars_data [type_]', str(e))
-            try:
-                area_ = driver.get_element(
-                    (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > section "
-                                      "> div > div > div > div.flat-panel-data-container.ng-scope.ng-isolate-scope > "
-                                      "div > div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(3) "
-                                      "> div.sphsi-param-value > span")).text.strip()
-            except Exception as e:
-                err_log(SITE_NAME + ' pars_data [area_]', str(e))
-            try:
-                price_ = driver.get_element(
-                    (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > section "
-                                      "> div > div > div > div.flat-panel-data-container.ng-scope.ng-isolate-scope > "
-                                      "div > div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(1) "
-                                      "> div:nth-child(1) > div.sphsi-param-value.ng-scope > span > "
-                                      "strong")).text.strip()
-            except Exception as e:
-                err_log(SITE_NAME + ' pars_data [price_]', str(e))
-            row = [section_, floor_, flat_, type_, area_, price_]
-            parser.add_row_info(row)
-
-            selector = 'body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > section > div > div > ' \
-                       'button '
-            driver.waiting_for_element((By.CSS_SELECTOR, selector), 30)
-            back = driver.get_element((By.CSS_SELECTOR, selector))
-            back.click()
-            sleep(5)
-        except Exception as e:
-            # err_log('pars_data [Этаж клик]', str(e))
-            pass
+        webdriver.ActionChains(driver.driver).move_to_element(floors[i]).click().perform()
+        sleep(3)
+        selector_ = 'iframe.mfp-iframe'
+        driver.waiting_for_element((By.CSS_SELECTOR, selector_), 30)
+        iframe = driver.get_element((By.CSS_SELECTOR, selector_))
+        driver.driver.switch_to.frame(iframe)
+        selector_ = 'div.window svg path'
+        driver.waiting_for_element((By.CSS_SELECTOR, selector_), 20)
+        flats = driver.get_elements((By.CSS_SELECTOR, selector_))
+        print(f"квартиры: {len(flats)}")
+        for j in range(len(flats)):
+            if not app.run:
+                return None
+            fill = flats[j].get_attribute("fill")
+            if fill == "#3ba108":
+                flats[j].click()
+                sleep(3)
+                section_, floor_, flat_, type_, area_, price_ = '', '', '', '', '', ''
+                try:
+                    text = driver.get_element(
+                        (By.CSS_SELECTOR, "div.apartment-details > p")).text.strip().lower()
+                    # print(text)
+                    area_ = text.split('\n')[0].strip()
+                    section_ = text.split('секция')[0].split(',')[1].strip()
+                    floor_ = text.split('этаж')[0].split('секция')[1].strip()
+                    type_ = text.split('комнат')[1].strip()
+                except Exception as e:
+                    err_log(SITE_NAME + ' pars_data [section_, area_, floor_, type_]', str(e))
+                try:
+                    flat_ = driver.get_element(
+                        (By.CSS_SELECTOR, "div.apartment-info-box > h1")).text.lower().split("квартира")[1].split('\n')[0].strip()
+                except Exception as e:
+                    err_log(SITE_NAME + ' pars_data [flat_]', str(e))
+                try:
+                    price_ = driver.get_element(
+                        (By.CSS_SELECTOR, "div.apartment-details")).text.lower().strip().split("руб")[0].split('\n')[-1].strip()
+                except Exception as e:
+                    err_log(SITE_NAME + ' pars_data [price_]', str(e))
+                row = [section_, floor_, flat_, type_, area_, price_]
+                parser.add_row_info(row)
+                driver.driver.back()
+                sleep(3)
+                selector_ = 'iframe.mfp-iframe'
+                driver.waiting_for_element((By.CSS_SELECTOR, selector_), 30)
+                iframe = driver.get_element((By.CSS_SELECTOR, selector_))
+                driver.driver.switch_to.frame(iframe)
+                selector_ = 'div.window svg path'
+                driver.waiting_for_element((By.CSS_SELECTOR, selector_), 20)
+                flats = driver.get_elements((By.CSS_SELECTOR, selector_))
+        driver.driver.switch_to.default_content()
+        selector_ = 'button.mfp-close'
+        driver.waiting_for_element((By.CSS_SELECTOR, selector_), 30)
+        close = driver.get_element((By.CSS_SELECTOR, selector_))
+        close.click()
+        sleep(3)
     return data
+
 
 

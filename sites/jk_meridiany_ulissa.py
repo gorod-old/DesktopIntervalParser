@@ -105,16 +105,18 @@ def pars_data(parser):
     driver = parser.driver
     driver.driver.maximize_window()
 
-    for i in range(3):
+    selector = f"body > div > section > div.sw-flex > div.sw-left.g-left.global-left-color > " \
+               f"div.std-menu.custom-scrollbar.ng-scope > div.std-menu-type.global-left-color.--chess.ng-scope.active " \
+               f"> div > div > a "
+    driver.waiting_for_element((By.CSS_SELECTOR, selector), 30)
+    bts = driver.get_elements((By.CSS_SELECTOR, selector))
+    print(f'дома-', len(bts))
+
+    for i in range(len(bts)):
         print(f'start-{i + 1}')
         if not app.run:
             return None
-        selector = f"body > div > section > div.sw-flex > div.sw-left.g-left.global-left-color > " \
-                   f"div.std-menu.custom-scrollbar.ng-scope > " \
-                   f"div.std-menu-type.global-left-color.--chess.ng-scope.active > div > div:nth-child({i + 1}) > a "
-        driver.waiting_for_element((By.CSS_SELECTOR, selector), 30)
-        bt = driver.get_element((By.CSS_SELECTOR, selector))
-        bt.click()
+        bts[i].click()
         sleep(3)
         selector = 'body > div > section > div.sw-flex > div.sw-right.ng-scope > div > section > div.conten.ng-scope > ' \
                    'div.sph-brov > div.sph-viewtype.ng-scope > div.sphv-item.ng-binding.ng-scope '

@@ -15,16 +15,12 @@ from bs4 import BeautifulSoup as Bs
 import numpy as np
 
 HEADLESS = True
-SITE_NAME = 'ЖК Еловый'
-SITE_URL = 'https://xn----ctbhbvklle0k.xn--p1ai/#/profitbase/house/104211/list?floorNumber=13&facadeId=40785&filter' \
-           '=property.status:AVAILABLE '
-SPREADSHEET_ID = '1oDsPgMfTYxTIcB2BbZRH3eJZNImVSMBwDvv-6sGqVvQ'  # заказчика
-SHEET_ID = 0  # заказчика
-SHEET_NAME = 'Лист1'  # заказчика
-# SPREADSHEET_ID = '1hKbtDClL1tk_I4LpTddpBjnXX98RF2xYF1g4q-QuymE'  # мой
-# SHEET_ID = 0  # мой
-# SHEET_NAME = 'Лист1'  # мой
-HEADER = ['Название ЖК', 'Дом', 'Этаж', '№ квартиры', 'Тип', 'Площадь', 'Цена']
+SITE_NAME = 'ЖК Меридианы Улисса'
+SITE_URL = 'https://xn--80aedgdyduckcbtr1d2a3l.xn--p1ai/#dp/chess'
+SPREADSHEET_ID = '1dO1Po73MC1Se2qc60cqyFJh2a6Ew5m3RaaVudgECg9k'  # заказчика
+SHEET_ID = 806580644  # заказчика
+SHEET_NAME = 'Лист2'  # заказчика
+HEADER = ['Дом', 'Этаж', '№ квартиры', 'Тип', 'Площадь', 'Цена']
 
 data = []
 
@@ -104,64 +100,84 @@ def pars_data(parser):
     data.clear()
     app = parser.app
     driver = parser.driver
+    driver.driver.maximize_window()
 
-    print('start')
-    selector = '#profitbase_front_widget'
+    frame = driver.get_elements((By.CSS_SELECTOR, '#target-frame-d8wa8gfa9f'))[0]
+    driver.driver.switch_to.frame(frame)
+
+    selector = f"body > div > section > div.sw-flex > div.sw-left.g-left.global-left-color > " \
+               f"div.std-menu.custom-scrollbar.ng-scope > div.std-menu-type.global-left-color.--chess.ng-scope.active " \
+               f"> div > div > a "
     driver.waiting_for_element((By.CSS_SELECTOR, selector), 30)
-    iframe = driver.get_element((By.CSS_SELECTOR, selector))
-    driver.driver.switch_to.frame(iframe)
+    bts = driver.get_elements((By.CSS_SELECTOR, selector))
+    print(f'дома-', len(bts))
 
-    while True:
+    for i in range(len(bts)):
+        print(f'start-{i + 1}')
         if not app.run:
             return None
-        selector = 'table > tbody > tr'
+        bts[i].click()
+        sleep(3)
+        selector = 'div.cell-free'
         driver.waiting_for_element((By.CSS_SELECTOR, selector), 30)
         els = driver.get_elements((By.CSS_SELECTOR, selector))
-        parser.info_msg(f'Квартиры: {len(els)}')
-        rng = len(els)
-        for i in range(0, rng, 1):
+        print(len(els))
+        for el in els:
             if not app.run:
                 return None
-            el = els[i]
-            obj_, house_, floor_, flat_, type_, area_, price_ = '', '', '', '', '', '', ''
+            webdriver.ActionChains(driver.driver).move_to_element(el).pause(1).click(el).perform()
+            sleep(2)
+            house_, floor_, flat_, type_, area_, price_ = '', '', '', '', '', ''
             try:
-                obj_ = el.find_element(By.XPATH, "./td[2]").text.strip()
-            except Exception as e:
-                err_log(SITE_NAME + ' pars_data [obj_]', str(e))
-            try:
-                house_ = el.find_element(By.XPATH, "./td[3]").text.strip()
+                xpath = '/html/body/div[1]/div/div/section/div/div/div[1]/div[1]/div/div[1]/div[3]/div[2]/div[6]/div[' \
+                        '2]/span '
+                house_ = driver.get_element((By.XPATH, xpath)).text.strip()
             except Exception as e:
                 err_log(SITE_NAME + ' pars_data [house_]', str(e))
+            # try:
+            #     house_ = f'Дом {i + 1}'
+            # except Exception as e:
+            #     err_log(SITE_NAME + ' pars_data [house_]', str(e))
             try:
-                floor_ = el.find_element(By.XPATH, "./td[10]").text.strip()
+                xpath = '/html/body/div[1]/div/div/section/div/div/div[1]/div[1]/div/div[1]/div[3]/div[2]/div[5]/div[' \
+                        '2]/span '
+                floor_ = driver.get_element((By.XPATH, xpath)).text.strip()
             except Exception as e:
                 err_log(SITE_NAME + ' pars_data [floor_]', str(e))
             try:
-                flat_ = el.find_element(By.XPATH, "./td[4]").text.strip()
+                xpath = '/html/body/div[1]/div/div/section/div/div/div[1]/div[1]/div/div[1]/div[3]/div[2]/div[4]/div[' \
+                        '2]/span '
+                flat_ = driver.get_element((By.XPATH, xpath)).text.strip()
             except Exception as e:
                 err_log(SITE_NAME + ' pars_data [flat_]', str(e))
             try:
-                type_ = el.find_element(By.XPATH, "./td[1]").text.strip()
+                xpath = '/html/body/div[1]/div/div/section/div/div/div[1]/div[1]/div/div[1]/div[3]/div[2]/div[2]/div[' \
+                        '2]/span '
+                type_ = driver.get_element((By.XPATH, xpath)).text.strip()
             except Exception as e:
-                err_log(SITE_NAME + ' pars_data [type_]', str(e))
+                err_log(SITE_NAME + ' pars_data type_]', str(e))
             try:
-                area_ = el.find_element(By.XPATH, "./td[5]").text.strip()
+                xpath = '/html/body/div[1]/div/div/section/div/div/div[1]/div[1]/div/div[1]/div[3]/div[2]/div[3]/div[' \
+                        '2]/span '
+                area_ = driver.get_element((By.XPATH, xpath)).text.strip()
             except Exception as e:
-                err_log(SITE_NAME + ' pars_data [area_]', str(e))
+                err_log(SITE_NAME + ' pars_data area_]', str(e))
             try:
-                price_ = el.find_element(By.XPATH, "./td[7]").text.strip()
+                xpath = '/html/body/div[1]/div/div/section/div/div/div[1]/div[1]/div/div[1]/div[3]/div[2]/div[1]/div[' \
+                        '1]/div[2]/span/strong '
+                price_ = driver.get_element((By.XPATH, xpath)).text.strip()
             except Exception as e:
-                err_log(SITE_NAME + ' pars_data [price_]', str(e))
-            row = [obj_, house_, floor_, flat_, type_, area_, price_]
-            parser.add_row_info(row)
+                err_log(SITE_NAME + ' pars_data price_]', str(e))
 
-        selector = 'div.desktop-properties__paginator > p-paginator > div > button.p-paginator-next'
-        driver.waiting_for_element((By.CSS_SELECTOR, selector), 30)
-        next = driver.get_element((By.CSS_SELECTOR, selector))
-        if next.is_enabled():
-            next.click()
-            sleep(3)
-        else:
-            print('end')
-            break
+            row = [house_, floor_, flat_, type_, area_, price_]
+            parser.add_row_info(row)
+            selector = 'body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > section > div > div > ' \
+                       'button '
+            driver.waiting_for_element((By.CSS_SELECTOR, selector), 30)
+            back = driver.get_element((By.CSS_SELECTOR, selector))
+            back.click()
+            # driver.driver.back()
+            sleep(1)
+        print(f'end-{i + 1}')
+
     return data

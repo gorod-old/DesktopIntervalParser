@@ -16,7 +16,7 @@ import numpy as np
 
 HEADLESS = True
 SITE_NAME = 'Leo Development'
-SITE_URL = 'https://leo-development.ru/catalog/uliss'
+SITE_URL = 'https://leo-development.ru/catalog/all'
 SPREADSHEET_ID = '1rbV9ZE5Gf2zdoDbji3WPbGMOBio_Ifp1lWAMBEsAVSg'  # заказчика
 SHEET_ID = 0  # заказчика
 SHEET_NAME = 'Лист1'  # заказчика
@@ -109,37 +109,16 @@ def pars_data(parser):
     driver = parser.driver
     driver.driver.maximize_window()
 
-    n = 0
     els = driver.get_elements(
         (By.CSS_SELECTOR, '#main > section > div > div.catalog__list.catalog_list > div.catalog_list__wrapper > a'))
-    while True:
-        if len(els) > 0:
-            try:
-                complex_ = driver.get_element((By.XPATH, '//*[@id="main"]/section/div/div[1]/h1/span')).text.strip()\
-                    .replace("«", "").replace("»", "")
-            except Exception as e:
-                err_log(SITE_NAME + " pars_data [complex_]", str(e))
-                complex_ = "не найден"
-            parser.info_msg(f"комплекс: {complex_}, квартиры: {len(els)}")
+    for el in els:
+        if not app.run:
+            return None
+        els_ = el.find_elements(By.XPATH, './div/p')
+        row = []
+        for i, p in enumerate(els_):
+            if i != 2:
+                row.append(p.text.strip())
+        parser.add_row_info(row)
 
-            for el in els:
-                if not app.run:
-                    return None
-                els_ = el.find_elements(By.XPATH, './div/p')
-                row = [complex_]
-                for p in els_:
-                    row.append(p.text.strip())
-                parser.add_row_info(row)
-        if n < len(URLS) - 1:
-            n += 1
-            url = URLS[n]
-            driver.get_page(url)
-            driver.waiting_for_element(
-                (By.CSS_SELECTOR,
-                 '#main > section > div > div.catalog__list.catalog_list > div.catalog_list__wrapper > a'), 20)
-            els = driver.get_elements(
-                (By.CSS_SELECTOR, '#main > section > div > div.catalog__list.catalog_list > div.catalog_list__wrapper '
-                                  '> a'))
-        else:
-            break
     return data

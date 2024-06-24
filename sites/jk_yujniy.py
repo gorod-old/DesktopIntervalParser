@@ -2,6 +2,7 @@ from random import uniform
 from time import sleep, time
 
 from PyQt5.QtCore import QThread
+from cffi.backend_ctypes import unicode
 from colorama import Fore, Style
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -16,14 +17,15 @@ import numpy as np
 
 HEADLESS = True
 SITE_NAME = 'ЖК Южный'
-SITE_URL = 'https://xn--f1aajcq8fsa.xn--p1ai/#/profitbase/projects/list?filter=property.status:AVAILABLE'
+SITE_URL = 'https://xn--f1aajcq8fsa.xn--p1ai/#/macrocatalog/complex/objects/6105529?studio=null&geo_city=1868' \
+           '&floorNum=1&category=flat&activity=sell&presMode=complex '
 SPREADSHEET_ID = '15T4TIaYzV-o3s-IrM32d4rGaGPrhFtiP3ifbZGnxgSo'  # заказчика
 SHEET_ID = 0  # заказчика
 SHEET_NAME = 'Лист1'  # заказчика
 # SPREADSHEET_ID = '1j6gjrMJFXNE1iQLqF6win-KX0dosSCC-kCuAxPn-YwE'  # мой
 # SHEET_ID = 0  # мой
 # SHEET_NAME = 'Лист1'  # мой
-HEADER = ['Дом', 'Этаж', '№ квартиры', 'Площадь', 'Цена', 'Статус']
+HEADER = ['Дом', 'Этаж', 'Тип', '№ квартиры', 'Площадь', 'Цена']
 
 data = []
 
@@ -63,12 +65,15 @@ class SiteParser(QThread):
 
     def _create_driver(self):
         try:
-            self.driver = WebDriver(headless=HEADLESS)
+            self.driver = WebDriver(headless=HEADLESS, wait_full_page_download=False)
             self.driver.get_page(SITE_URL)
             for i in range(5):
-                sleep(3)
-                self.driver.waiting_for_element((By.XPATH, '//*[@id="profitbase_front_widget"]'), 20)
-                els = self.driver.get_elements((By.XPATH, '//*[@id="profitbase_front_widget"]'))
+                sleep(10)
+                sel = '#main-wrapper > div.current-view > div.current-view-sides > div.current-view-right > ' \
+                      'div.current-view-content > div > div > div.simplebar-wrapper > div.simplebar-mask > div > div ' \
+                      '> div > div > div > table > tbody > tr '
+                self.driver.waiting_for_element((By.CSS_SELECTOR, sel), 20)
+                els = self.driver.get_elements((By.CSS_SELECTOR, sel))
                 if not els or len(els) == 0:
                     sleep(uniform(1, 5))
                     self.driver.close()
@@ -102,57 +107,51 @@ def pars_data(parser):
     app = parser.app
     driver = parser.driver
     driver.driver.maximize_window()
-    frame = driver.get_element((By.XPATH, '//*[@id="profitbase_front_widget"]'))
-    driver.driver.switch_to.frame(frame)
-    driver.waiting_for_element((By.XPATH, ".//p-paginator/div/button[contains(@class, 'p-paginator-next')]"), 20)
-    disabled, next_bt, page = False, None, 1
-    sleep(5)
-    while not disabled:
+    sel = '#main-wrapper > div.current-view > div.current-view-sides > div.current-view-right > ' \
+          'div.current-view-content > div > div > div.simplebar-wrapper > div.simplebar-mask > div > div > div > div ' \
+          '> div > table > tbody > tr '
+    driver.waiting_for_element((By.CSS_SELECTOR, sel), 20)
+    els = []
+    while True:
         if not app.run:
             return None
-        if next_bt:
-            next_bt.click()
-            sleep(1)
-        sleep(uniform(1, 1.5))
-        els = driver.get_elements((By.XPATH, ".//div[contains(@id, 'pr_id')]/div/table/tbody/tr"))
-        parser.info_msg(f"page: {page}, els: {len(els)}")
-        for el in els:
-            if not app.run:
-                return None
-            type_ = el.find_element(By.XPATH, ".//td[9]").text.strip()
-            if type_.lower() == "квартира":
-                house_, floor_, flat_, area_, price_, status_ = "", "", "", "", "", ""
-                try:
-                    house_ = el.find_element(By.XPATH, ".//td[3]").text.strip()
-                except Exception as e:
-                    err_log(SITE_NAME + ' pars_data [house_]', str(e))
-                try:
-                    floor_ = el.find_element(By.XPATH, ".//td[10]").text.strip()
-                except Exception as e:
-                    err_log(SITE_NAME + ' pars_data [floor_]', str(e))
-                try:
-                    flat_ = el.find_element(By.XPATH, ".//td[4]").text.strip()
-                except Exception as e:
-                    err_log(SITE_NAME + ' pars_data [flat_]', str(e))
-                try:
-                    area_ = el.find_element(By.XPATH, ".//td[5]").text.strip()
-                except Exception as e:
-                    err_log(SITE_NAME + ' pars_data [area_]', str(e))
-                try:
-                    price_ = el.find_element(By.XPATH, ".//td[7]").text.strip()
-                except Exception as e:
-                    err_log(SITE_NAME + ' pars_data [price_]', str(e))
-                try:
-                    status_ = el.find_element(By.XPATH, ".//td[8]/div").text.strip()
-                except Exception as e:
-                    err_log(SITE_NAME + ' pars_data [status_]', str(e))
-                row = [house_, floor_, flat_, area_, price_, status_]
-                parser.add_row_info(row)
-
-        next_bt = driver.get_element((By.XPATH, ".//p-paginator/div/button[contains(@class, 'p-paginator-next')]"))
-        print(next_bt)
-        print(next_bt.get_attribute("class"))
-        disabled = "p-disabled" in next_bt.get_attribute("class")
-        page += 1
-
+        els_ = driver.get_elements((By.CSS_SELECTOR, sel))
+        webdriver.ActionChains(driver.driver).move_to_element(els_[-5]).pause(1).perform()
+        sleep(3)
+        if len(els_) == len(els):
+            break
+        els = els_
+    print(f"квартир: {len(els)}")
+    for el in els:
+        if not app.run:
+            return None
+        house_, floor_, type_, flat_, area_, price_ = "", "", "", "", "", ""
+        try:
+            price_ = el.find_element(By.XPATH, "./td[9]/div/div/span").text.strip()
+        except Exception as e:
+            err_log(SITE_NAME + ' pars_data [price_]', str(e))
+        if '₽' in price_:
+            try:
+                house_ = el.find_element(By.XPATH, "./td[2]").text.strip()
+                house_ = house_.split('дом')[1].strip()
+            except Exception as e:
+                err_log(SITE_NAME + ' pars_data [house_]', str(e))
+            try:
+                floor_ = el.find_element(By.XPATH, "./td[6]").text.strip().replace('⁨', '').replace('⁩', '')
+            except Exception as e:
+                err_log(SITE_NAME + ' pars_data [floor_]', str(e))
+            try:
+                type_ = el.find_element(By.XPATH, "./td[4]").text.strip().replace('⁨', '').replace('⁩', '')
+            except Exception as e:
+                err_log(SITE_NAME + ' pars_data [type_]', str(e))
+            try:
+                flat_ = el.find_element(By.XPATH, "./td[3]").text.strip()
+            except Exception as e:
+                err_log(SITE_NAME + ' pars_data [flat_]', str(e))
+            try:
+                area_ = el.find_element(By.XPATH, "./td[5]").text.strip()
+            except Exception as e:
+                err_log(SITE_NAME + ' pars_data [area_]', str(e))
+            row = [house_, floor_, type_, flat_, area_, price_]
+            parser.add_row_info(row)
     return data

@@ -113,6 +113,7 @@ def pars_data(parser):
     for url in urls:
         if not app.run:
             return None
+        # url = urls[-1]
         parser.info_msg(f'url: {url}')
         driver.get_page(url)
         sleep(1)
@@ -145,7 +146,7 @@ def pars_data(parser):
                     driver.get_page(url)
                     sleep(1)
                     els = driver.get_elements((By.CSS_SELECTOR, '#my-map > svg > g > path'))
-                    err_log(SITE_NAME + 'pars_data [Дом, Этаж]', str(e))
+                    err_log(SITE_NAME + ' pars_data [Дом, Этаж]', str(e))
                     pass
 
             try:
@@ -163,8 +164,8 @@ def pars_data(parser):
                 action.move_by_offset(200, 0).pause(1)
                 action.move_by_offset(-100, 350).pause(1).perform()
                 # print('check3')
-                get_row_data(parser, driver, h, f,)
-                action.move_by_offset(250, 0).pause(1)
+                get_row_data(parser, driver, h, f, )
+                action.move_by_offset(120, 0).pause(1)
                 action.move_by_offset(-400, 0).pause(1).perform()
                 # print('check4')
                 get_row_data(parser, driver, h, f,)
@@ -173,27 +174,27 @@ def pars_data(parser):
                 # print('check5')
                 get_row_data(parser, driver, h, f)
                 action.move_by_offset(550, 0).pause(1)
-                action.move_by_offset(-700, 0).pause(1).perform()
+                action.move_by_offset(-650, 0).pause(1).perform()
                 # print('check6')
                 get_row_data(parser, driver, h, f)
-                action.move_by_offset(700, 0).pause(1)
-                action.move_by_offset(-850, 0).pause(1).perform()
+                action.move_by_offset(650, 0).pause(1)
+                action.move_by_offset(-800, 0).pause(1).perform()
                 # print('check7')
                 get_row_data(parser, driver, h, f)
-                action.move_by_offset(850, 0).pause(1)
-                action.move_by_offset(-1050, 0).pause(1).perform()
+                action.move_by_offset(800, 0).pause(1)
+                action.move_by_offset(-940, 0).pause(1).perform()
                 # print('check8')
+                get_row_data(parser, driver, h, f)
+                action.move_by_offset(940, 0).pause(1)
+                action.move_by_offset(-1050, 0).pause(1).perform()
+                # print('check9')
                 get_row_data(parser, driver, h, f)
                 action.move_by_offset(1050, 0).pause(1)
                 action.move_by_offset(-1200, 0).pause(1).perform()
-                # print('check9')
-                get_row_data(parser, driver, h, f)
-                action.move_by_offset(1200, 0).pause(1)
-                action.move_by_offset(-1350, 0).pause(1).perform()
                 # print('check10')
                 get_row_data(parser, driver, h, f)
                 action.move_by_offset(-100, 0).pause(1)
-                action.move_by_offset(550, -300).pause(1).perform()
+                action.move_by_offset(600, -300).pause(1).perform()
                 # print('check14')
                 get_row_data(parser, driver, h, f)
                 action.move_to_element(map_).move_by_offset(0, -350).pause(1)
@@ -210,12 +211,13 @@ def pars_data(parser):
                 get_row_data(parser, driver, h, f)
                 pass
             except Exception as e:
-                err_log(SITE_NAME + 'pars_data [квартиры]', str(e))
+                err_log(SITE_NAME + f' pars_data [квартиры]' + f' дом {h} этаж {f}', str(e))
                 pass
             # break
     return data
 
 
+@try_func
 def get_row_data(parser, driver, h, f):
     row = [h, f]
     flat_, type_, area_, price_ = '', '', '', ''
@@ -227,6 +229,7 @@ def get_row_data(parser, driver, h, f):
     if len(els_) > 0:
         for el in els_:
             text = el.text.lower().replace('\n', ' ').strip()
+            print(text)
             if text != '' and 'свободна' in text:
                 try:
                     flat_ = text.split('квартира ')[1].split(' ')[0].strip()

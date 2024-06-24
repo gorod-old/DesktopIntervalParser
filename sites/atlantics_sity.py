@@ -23,7 +23,7 @@ SHEET_NAME = 'Лист1'  # заказчика
 # SPREADSHEET_ID = '1L9qloeOBGd40yPAJkJve2L59h9rm3P4gtkmZ-d6oCh4'  # мой
 # SHEET_ID = 0  # мой
 # SHEET_NAME = 'Лист1'  # мой
-HEADER = ['Дом', 'Этаж', '№ квартиры', 'Тип', 'Площадь', 'Цена']
+HEADER = ['Дом', 'Этаж', '№ квартиры', 'Тип', 'Площадь', 'Цена', 'Со скидкой']
 
 data = []
 
@@ -105,7 +105,7 @@ def pars_data(parser):
     driver = parser.driver
     driver.driver.maximize_window()
 
-    sleep(15)
+    sleep(20)
     try:
         driver.waiting_for_element((By.CSS_SELECTOR, '#target-frame-d8wa8gfa9f'), 20)
         iframe = driver.get_element((By.CSS_SELECTOR, '#target-frame-d8wa8gfa9f'))
@@ -136,64 +136,85 @@ def pars_data(parser):
                 sleep(2)
                 if not app.run:
                     return None
-                house_, floor_, flat_, type_, area_, price_ = '', '', '', '', '', ''
+                check = ''
                 try:
-                    house_ = driver.get_element(
-                        (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > "
-                                          "section > div > div > div > "
-                                          "div.flat-panel-data-container.ng-scope.ng-isolate-scope > div > "
-                                          "div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(6) > "
-                                          "div.sphsi-param-value > span")).text.strip()
+                    check = driver.get_element(
+                        (By.CSS_SELECTOR, 'body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > section '
+                                          '> div > div > div > div.flat-panel-data-container.ng-scope.ng-isolate-scope > '
+                                          'div > div.sphs-subinner > div.sphs-text > div.sphsi-buttons.ng-scope > div > '
+                                          'p:nth-child(1) > strong')).text.strip()
+                    # print(check)
                 except Exception as e:
-                    err_log(SITE_NAME + ' pars_data [house_]', str(e))
-                try:
-                    floor_ = driver.get_element(
-                        (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > "
-                                          "section > div > div > div > "
-                                          "div.flat-panel-data-container.ng-scope.ng-isolate-scope > div > "
-                                          "div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(5) > "
-                                          "div.sphsi-param-value > span")).text.strip()
-                except Exception as e:
-                    err_log(SITE_NAME + ' pars_data [floor_]', str(e))
-                try:
-                    flat_ = driver.get_element(
-                        (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > "
-                                          "section > div > div > div > "
-                                          "div.flat-panel-data-container.ng-scope.ng-isolate-scope > div > "
-                                          "div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(4) > "
-                                          "div.sphsi-param-value > span")).text.strip()
-                except Exception as e:
-                    err_log(SITE_NAME + ' pars_data [flat_]', str(e))
-                try:
-                    type_ = driver.get_element(
-                        (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > "
-                                          "section > div > div > div > "
-                                          "div.flat-panel-data-container.ng-scope.ng-isolate-scope > div > "
-                                          "div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(2) > "
-                                          "div.sphsi-param-value.ng-scope > span")).text.strip()
-                except Exception as e:
-                    err_log(SITE_NAME + ' pars_data [type_]', str(e))
-                try:
-                    area_ = driver.get_element(
-                        (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > "
-                                          "section > div > div > div > "
-                                          "div.flat-panel-data-container.ng-scope.ng-isolate-scope > div > "
-                                          "div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(3) > "
-                                          "div.sphsi-param-value > span")).text.strip() + " м2 "
-                except Exception as e:
-                    err_log(SITE_NAME + ' pars_data [area_]', str(e))
-                try:
-                    price_ = driver.get_element(
-                        (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > "
-                                          "section > div > div > div > "
-                                          "div.flat-panel-data-container.ng-scope.ng-isolate-scope > div > "
-                                          "div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(1) > "
-                                          "div:nth-child(1) > div.sphsi-param-value.ng-scope > span > "
-                                          "strong")).text.strip()
-                except Exception as e:
-                    err_log(SITE_NAME + ' pars_data [price_]', str(e))
-                row = [house_, floor_, flat_, type_, area_, price_]
-                parser.add_row_info(row)
+                    pass
+                if 'Забронировано' not in check:
+                    house_, floor_, flat_, type_, area_, price_, sale_price_ = '', '', '', '', '', '', ''
+                    try:
+                        house_ = driver.get_element(
+                            (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > "
+                                              "section > div > div > div > "
+                                              "div.flat-panel-data-container.ng-scope.ng-isolate-scope > div > "
+                                              "div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(6) > "
+                                              "div.sphsi-param-value > span")).text.strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [house_]', str(e))
+                    try:
+                        floor_ = driver.get_element(
+                            (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > "
+                                              "section > div > div > div > "
+                                              "div.flat-panel-data-container.ng-scope.ng-isolate-scope > div > "
+                                              "div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(5) > "
+                                              "div.sphsi-param-value > span")).text.strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [floor_]', str(e))
+                    try:
+                        flat_ = driver.get_element(
+                            (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > "
+                                              "section > div > div > div > "
+                                              "div.flat-panel-data-container.ng-scope.ng-isolate-scope > div > "
+                                              "div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(4) > "
+                                              "div.sphsi-param-value > span")).text.strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [flat_]', str(e))
+                    try:
+                        type_ = driver.get_element(
+                            (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > "
+                                              "section > div > div > div > "
+                                              "div.flat-panel-data-container.ng-scope.ng-isolate-scope > div > "
+                                              "div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(2) > "
+                                              "div.sphsi-param-value.ng-scope > span")).text.strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [type_]', str(e))
+                    try:
+                        area_ = driver.get_element(
+                            (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > "
+                                              "section > div > div > div > "
+                                              "div.flat-panel-data-container.ng-scope.ng-isolate-scope > div > "
+                                              "div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(3) > "
+                                              "div.sphsi-param-value > span")).text.strip() + " м2 "
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [area_]', str(e))
+                    try:
+                        price_ = driver.get_element(
+                            (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > "
+                                              "section > div > div > div > "
+                                              "div.flat-panel-data-container.ng-scope.ng-isolate-scope > div > "
+                                              "div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child(1) > "
+                                              "div:nth-child(1) > div.sphsi-param-value.ng-scope > span > "
+                                              "strong")).text.strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [price_]', str(e))
+                    try:
+                        sale_price_ = driver.get_element(
+                            (By.CSS_SELECTOR, "body > div.modal.flatModal.ng-scope.ng-isolate-scope.in > div > div > "
+                                              "section > div > div > div > "
+                                              "div.flat-panel-data-container.ng-scope.ng-isolate-scope > div > "
+                                              "div.sphs-subinner > div.sphs-text > div.sphsi-params > div:nth-child("
+                                              "1) > div.sphsi-param.--skidfinal.ng-scope > div.sphsi-param-value > "
+                                              "span > strong")).text.strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [sale_price_]', str(e))
+                    row = [house_, floor_, flat_, type_, area_, price_, sale_price_]
+                    parser.add_row_info(row)
 
                 driver.driver.back()
                 driver.waiting_for_element((By.CSS_SELECTOR, '#target-frame-d8wa8gfa9f'), 20)

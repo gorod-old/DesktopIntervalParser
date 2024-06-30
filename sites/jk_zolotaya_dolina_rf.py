@@ -102,10 +102,31 @@ def pars_data(parser):
     els = driver.get_elements((By.CSS_SELECTOR, '#scroller > svg > path'))
     parser.info_msg(f'Этажи: {len(els)}')
     rng = len(els)
+    d, f = '', ''
+
+    # обманываем всплывающее окно
+    try:
+        webdriver.ActionChains(driver.driver).move_to_element(els[0]).move_by_offset(0, 10).click().perform()
+        frame = driver.get_elements((By.CSS_SELECTOR, 'body > div.mfp-wrap.mfp-close-btn-in.mfp-auto-cursor.mfp'
+                                                      '-ready > div > div.mfp-content > div > iframe'))[0]
+        driver.driver.switch_to.frame(frame)
+        el = driver.get_element((By.CSS_SELECTOR, '#blockquote > h2')).text
+        d = int(el.split('дом')[0].strip()) if 'дом' in el else 1
+        f = int(el.split('Этаж')[1].strip())
+        parser.info_msg(f'Дом: {d}, Этаж: {f}, Индекс: 0')
+        get_flat_info(driver, f, d, 0, app, parser)
+        driver.driver.switch_to.default_content()
+        driver.get_page(SITE_URL)
+        sleep(1)
+        els = driver.get_elements((By.CSS_SELECTOR, '#scroller > svg > path'))
+    except Exception as e:
+        pass
+
     for floor in range(0, rng, 1):
         if not app.run:
             return None
         check = False
+
         try:
             if 0 <= floor <= 8 or 19 <= floor <= 25 or floor == 38:
                 webdriver.ActionChains(driver.driver).move_to_element(els[floor]).move_by_offset(0, 10).click().perform()
@@ -151,13 +172,14 @@ def get_flat_info(driver, f, d, floor, app, parser):
     for i, index in enumerate(index_list):
         if not app.run:
             return
+
         check = False
         html = None
         offset_x, offset_y = 0, 32
         for j in range(2):
             try:
                 action = webdriver.ActionChains(driver.driver)
-                action.move_by_offset(200, 200).perform()
+                action.move_by_offset(100, 100).perform()
                 action.move_to_element(hints[index]).move_by_offset(offset_x, offset_y).click().perform()
                 action.reset_actions()
                 sleep(2)
@@ -198,10 +220,9 @@ def get_flat_info(driver, f, d, floor, app, parser):
 
             if i < len(index_list) - 1:
                 driver.driver.back()
-                sleep(1)
+                sleep(2)
                 frame = driver.get_elements((By.CSS_SELECTOR, 'body > div.mfp-wrap.mfp-close-btn-in.mfp-auto-cursor.mfp'
                                                               '-ready > div > div.mfp-content > div > iframe'))[0]
                 driver.driver.switch_to.frame(frame)
                 hints = driver.get_elements((By.CSS_SELECTOR, '#body_hint > div > div.flag-text'))
-
 

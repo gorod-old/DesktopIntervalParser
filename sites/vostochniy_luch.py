@@ -15,14 +15,14 @@ import numpy as np
 
 HEADLESS = True
 SITE_NAME = 'ЖК Восточный Луч'
-SITE_URL = 'https://vlzu.ru/apartments'
-SPREADSHEET_ID = '1WIiT4dvlGu-TNLqyHHsM1RL15m8VRiMGp57kX7GPbpw'  # заказчика
-SHEET_ID = 0  # заказчика
-SHEET_NAME = 'Лист1'  # заказчика
+SITE_URL = 'https://vlsz.ru/project/pobeda#/macrocatalog/complexes/3302200?studio=null&category=flat&activity=sell'
+SPREADSHEET_ID = '1Kj-aK06iriMxoJABe9bybReDmflFaR73G2ajMiAjJbg'  # заказчика
+SHEET_ID = 206119309  # заказчика
+SHEET_NAME = 'parser'  # заказчика
 # SPREADSHEET_ID = '1YPP7pzMZ5jaHl-2jkcO0_mJhozawBnjjTcl6JYX6O6E'  # мой
 # SHEET_ID = 0  # мой
 # SHEET_NAME = 'Лист1'  # мой
-HEADER = ['Дом', 'Этаж', '№ квартиры', 'Тип', 'Площадь', 'Цена', 'Очередь']
+HEADER = ['Дом', 'Подъезд', 'Этаж', '№ квартиры', 'Тип', 'Площадь', 'Цена']
 
 data = []
 
@@ -65,8 +65,12 @@ class SiteParser(QThread):
             self.driver = WebDriver(headless=HEADLESS)
             self.driver.get_page(SITE_URL)
             for i in range(5):
+                selector = '#main-wrapper > div > div.current-view-sides > div.current-view-right > ' \
+                           'div.current-view-content > div > div > div > div > div.simplebar-wrapper > ' \
+                           'div.simplebar-mask > div > div > div > div > div > ' \
+                           'a > div > div.house_other > div.house_title '
                 els = self.driver.get_elements(
-                    (By.CSS_SELECTOR, '#__next'))
+                    (By.CSS_SELECTOR, selector))
                 if not els or len(els) == 0:
                     sleep(uniform(1, 5))
                     self.driver.close()
@@ -100,88 +104,92 @@ def pars_data(parser):
     app = parser.app
     driver = parser.driver
     driver.driver.maximize_window()
-    num = 0
-    num_1 = 0
-    i = 1
+    sleep(5)
+    selector = '#main-wrapper > div > div.current-view-sides > div.current-view-right > div.current-view-content > ' \
+               'div > div > div > div > div.simplebar-wrapper > div.simplebar-mask > div > div > div > div > div > ' \
+               'a > div > div.house_other > div.house_title '
+    driver.waiting_for_element((By.CSS_SELECTOR, selector), 20)
+    els = driver.get_elements((By.CSS_SELECTOR, selector))
+    els[0].click()
+    sleep(5)
+    selector = '#main-wrapper > div > div.current-view-sides > div.current-view-right > div.filters-navigation > div ' \
+               '> div > li:nth-child(6) > a '
+    tab = driver.get_element((By.CSS_SELECTOR, selector))
+    tab.click()
+    sleep(5)
+    n = 2
     while True:
         if not app.run:
             return None
-        url = f'https://vlzu.ru/apartments?page={i}'
-        driver.get_page(url)
-        sleep(3)
-        html = driver.driver.page_source
-        soup = Bs(html, 'html.parser')
-        els = soup.find_all("div", {"class": "CardBox_inner__3jq_2"})
-        parser.info_msg(f'Страница: {i}, Квартиры: {len(els)}')
-        if len(els) == 0:
+        selector = '#main-wrapper > div > div.macro-widget-navigation > ' \
+                   'div.catalog-dropdown.widgets-nav-complexes.dropdown '
+        select = driver.get_element((By.CSS_SELECTOR, selector))
+        select.click()
+        selector = '#main-wrapper > div > div.macro-widget-navigation > ' \
+                   'div.catalog-dropdown.widgets-nav-complexes.dropdown.opened > div:nth-child(2) > ul > li '
+        items = driver.get_elements((By.CSS_SELECTOR, selector))
+        house_, entrance_, floor_, flat_, type_, area_, price_ = '', '', '', '', '', '', ''
+        if n < len(items):
+            try:
+                house_ = items[n].text.strip()
+                print(house_)
+            except Exception as e:
+                err_log(SITE_NAME + ' pars_data [house_]', str(e))
+            items[n].click()
+            n += 1
+            sleep(5)
+            els_ = []
+            num, i = 0, 0
+            while True:
+                if not app.run:
+                    return None
+                if i >= len(els_):
+                    sel = '#main-wrapper > div > div.current-view-sides > div.current-view-right > ' \
+                          'div.current-view-content > div > div > div > div > div > div.simplebar-wrapper > ' \
+                          'div.simplebar-mask > div > div > div > div.all-objects-cont.in-house > div > table > tbody ' \
+                          '> tr '
+                    driver.waiting_for_element((By.CSS_SELECTOR, sel), 20)
+                    els_ = driver.get_elements((By.CSS_SELECTOR, sel))
+                    if len(els_) > num:
+                        num = len(els_)
+                    else:
+                        break
+                webdriver.ActionChains(driver.driver).move_to_element(els_[i]).perform()
+                sleep(1)
+                try:
+                    xpath = './td[7]/div/div/span'
+                    price_ = els_[i].find_element(By.XPATH, xpath).text.strip()
+                except Exception as e:
+                    err_log(SITE_NAME + ' pars_data [price_]', str(e))
+                if '₽' in price_:
+                    try:
+                        xpath = './td[6]/a'
+                        entrance_ = els_[i].find_element(By.XPATH, xpath).text.strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [entrance_]', str(e))
+                    try:
+                        xpath = './td[5]'
+                        floor_ = els_[i].find_element(By.XPATH, xpath).text.replace('⁨', '').replace('⁩', '').strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [floor_]', str(e))
+                    try:
+                        xpath = './td[4]'
+                        area_ = els_[i].find_element(By.XPATH, xpath).text.replace('м²', '').strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [area_]', str(e))
+                    try:
+                        xpath = './td[3]'
+                        type_ = els_[i].find_element(By.XPATH, xpath).text.replace('⁨', '').replace('⁩', '').strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [type_]', str(e))
+                    try:
+                        xpath = './td[2]/div/span'
+                        flat_ = els_[i].find_element(By.XPATH, xpath).text.strip()
+                    except Exception as e:
+                        err_log(SITE_NAME + ' pars_data [flat_]', str(e))
+                    row = [house_, entrance_, floor_, flat_, type_, area_, price_]
+                    parser.add_row_info(row)
+                i += 1
+        else:
             break
-        num_1 += len(els)
-        for el in els:
-            if not app.run:
-                return None
-            href = None
-            house_, floor_, flat_, type_, area_, price_, queue_ = '', '', '', '', '', '', ''
-            # Очередь
-            try:
-                text = el.find('div', {"class": "CardBox_description__2Wp3_"}).getText(strip=True)
-                queue_ = text.strip()
-            except Exception as e:
-                err_log(SITE_NAME + f' get_flat_info [queue_], page: {i}', str(e))
-            # Цена
-            try:
-                price = el.find('div', {"class": "CardBox_price__2KWJD"}).getText(strip=True)
-                price_ = price.split('₽')[0] + ' ₽'
-            except Exception as e:
-                err_log(SITE_NAME + f' get_flat_info [price_], page: {i}', str(e))
-            # href
-            try:
-                href = el.find('a', {"class": "CardBox_link__3yLNB"})['href']
-                href = 'https://vlzu.ru' + href
-            except Exception as e:
-                err_log(SITE_NAME + f' get_flat_info [href], page: {i}', str(e))
-
-            if href is not None:
-                driver.get_page(href)
-                sleep(3)
-                html_ = driver.driver.page_source
-                soup_ = Bs(html_, "html.parser")
-                el_ = soup_.find('ul', {"class": "ApartmentInfo_prop__192RT"})
-                if el_ is not None:
-                    # Дом
-                    try:
-                        house_ = el_.find("div", string="Номер дома").next_sibling.getText(strip=True)
-                    except Exception as e:
-                        err_log(SITE_NAME + f' get_flat_info [house_], page: {i}', str(e))
-                    # Этаж
-                    try:
-                        floor_ = el_.find("div", string="Этаж").next_sibling.getText(strip=True)
-                    except Exception as e:
-                        err_log(SITE_NAME + f' get_flat_info [floor_], page: {i}', str(e))
-                    # Квартира
-                    try:
-                        flat_ = el_.find("div", string="Номер квартиры").next_sibling.getText(strip=True)
-                    except Exception as e:
-                        err_log(SITE_NAME + f' get_flat_info [flat_], page: {i}', str(e))
-                    # Тип, Площадь
-                    try:
-                        text = soup_.find('div', {"class": "ApartmentInfo_name__3xInL"}).getText(strip=True)
-                        type_ = text.split(',')[0].strip()
-                        parts = text.split(',')
-                        parts.pop(0)
-                        text = ','.join(parts)
-                        area_ = text.split('м')[0].strip() + ' м²'
-                    except Exception as e:
-                        err_log(SITE_NAME + f' get_flat_info [type_, area_], page: {i}', str(e))
-
-                    num += 1
-                else:
-                    parser.info_msg(f'element not find! page: {i}')
-            else:
-                parser.info_msg(f'href is None! page: {i}')
-
-            row = [house_, floor_, flat_, type_, area_, price_, queue_]
-            parser.add_row_info(row)
-        i += 1
-    parser.info_msg(f'Страниц: {i - 1}')
-    print(num, num_1)
     return data

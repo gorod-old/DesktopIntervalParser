@@ -197,7 +197,10 @@ class WebDriver(Parser):
                 service = Service(path_to_chromedriver)
                 service.creationflags = CREATE_NO_WINDOW
                 options = webdriver.ChromeOptions()
-                options.headless = self._headless
+                # options.headless = self._headless
+                if self._headless:
+                    options.add_argument("--headless=old")
+
                 options.add_argument("--window-size=%s" % f"{width},{height}")
                 if rem_warning:
                     options.add_argument("--disable-infobars")  # removes a warning

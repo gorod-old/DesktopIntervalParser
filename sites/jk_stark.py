@@ -14,7 +14,7 @@ import numpy as np
 
 HEADLESS = True
 SITE_NAME = 'ЖК Старк'
-SITE_URL = 'https://domoplaner.ru/catalog/383/8I59Ck/chess/?house_id=2322'
+SITE_URL = 'https://domoplaner.ru/catalog/383/6hu3oq/chess/?house_id=2322'
 SPREADSHEET_ID = '1-gUVURgK434eC1B6CFZnc20t-F97qY0YD3aGN1j1QLs'  # заказчика
 SHEET_ID = 405111200  # заказчика
 SHEET_NAME = 'Лист2'  # заказчика

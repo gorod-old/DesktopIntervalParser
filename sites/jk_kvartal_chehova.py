@@ -127,7 +127,8 @@ def pars_data(parser):
                 xpath = ".//*[contains(text(),'переуступка')]"
                 status_ = el.find_element(By.XPATH, xpath).text.strip().lower()
             except Exception as e:
-                err_log(SITE_NAME + ' pars_data [status_]', str(e))
+                # err_log(SITE_NAME + ' pars_data [status_]', str(e))
+                pass
         try:
             xpath = "./div[3]/div[2]/div[1]"
             type_ = el.find_element(By.XPATH, xpath).text.strip()
